@@ -1,0 +1,40 @@
+<div id="ocular-chatbot" class="ocular-chatbot">
+  <div id="chatbot-panel" class="chatbot-panel"  role="dialog" aria-modal="true" aria-label="OCULAR Assistant" hidden>
+    <div class="chatbot-topbar"></div>
+    <div class="chatbot-header">
+      <span class="chatbot-status-dot"></span>
+      <div class="chatbot-titlewrap">
+        <span class="chatbot-title">OCULAR</span>
+        <span class="chatbot-subtitle">Assistant</span>
+      </div>
+      <button id="chatbot-close" class="chatbot-close" type="button" aria-label="Close chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="chatbot-messages" class="chatbot-messages" role="log" aria-live="polite" aria-atomic="false"></div>
+    <div class="chatbot-input-window">
+      <input id="chatbot-input" class="chatbot-input" type="text" placeholder="Ask a question…">
+      <button id="chatbot-send" class="chatbot-send" type="button" aria-label="Send"
+              data-url="{f:uri.page(pageType: 1589)}"
+              data-history-url="{f:uri.page(pageType: 1590)}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="cf-turnstile" 
+      class="cf-turnstile" 
+      data-sitekey="{turnstileSiteKey}"
+      data-callback="onTurnstileSuccess"
+      data-appearance="execute"
+      data-execution="execute">
+  </div>
+
+  <button id="chatbot-fab" class="chatbot-fab" type="button" aria-label="Open AI Assistant">
+    <span class="chatbot-fab-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.8 9.8 0 0 1-4-.84L3 20l1.3-3.2A7.5 7.5 0 0 1 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8Z"/></svg>
+    </span>
+    <span class="chatbot-fab-label">AI Assistant</span>
+  </button>
+
+</div>

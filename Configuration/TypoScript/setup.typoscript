@@ -1,0 +1,71 @@
+plugin.tx_chatbot_chatbot {
+    view {
+        templateRootPaths.0 = EXT:chatbot/Resources/Private/Templates/
+        partialRootPaths.0 = EXT:chatbot/Resources/Private/Partials/
+        layoutRootPaths.0 = EXT:chatbot/Resources/Private/Layouts/
+    }
+}
+
+chatbotAjax = PAGE
+chatbotAjax {
+    typeNum = 1589
+    config {
+        disableAllHeaderCode = 1
+        additionalHeaders.10.header = Content-Type: application/json
+        admPanel = 0
+        debug = 0
+        no_cache = 1
+        index_enable = 0
+    }
+    10 = USER
+    10 {
+        userFunc = TYPO3\CMS\Extbase\Core\Bootstrap->run
+        extensionName = Chatbot
+        pluginName = Chatbot
+        vendorName = Ocular
+        controller = Chat
+        action = ask
+    }
+}
+
+chatbotHistory=PAGE
+chatbotHistory {
+    typeNum = 1590
+    config {
+        disableAllHeaderCode = 1
+        additionalHeaders.10.header = Content-Type: application/json
+        admPanel = 0
+        debug = 0
+        no_cache = 1
+        index_enable = 0
+    }
+    10 = USER
+    10 {
+        userFunc = TYPO3\CMS\Extbase\Core\Bootstrap->run
+        extensionName = Chatbot
+        pluginName = History
+        vendorName = Ocular
+        controller = Chat
+        action = history
+    }
+}
+
+page.includeCSS.ocularChatbot = EXT:chatbot/Resources/Public/Css/ChatbotStyle.css
+page.includeJSFooter.ocularMarked = EXT:chatbot/Resources/Public/JavaScript/marked.umd.js
+  page.includeJSFooter.ocularMarked.defer = 1
+page.includeJSFooter.ocularPurify = EXT:chatbot/Resources/Public/JavaScript/purify.min.js
+  page.includeJSFooter.ocularPurify .defer = 1
+page.includeJSFooter.ocularChatbot = EXT:chatbot/Resources/Public/JavaScript/Chatbot.js
+page.includeJSFooter.ocularChatbot.defer = 1
+page.includeJSFooter.turnstile = https://challenges.cloudflare.com/turnstile/v0/api.js
+    page.includeJSFooter.turnstile.external = 1
+
+page.footerData.10 = FLUIDTEMPLATE
+page.footerData.10 {
+    file = EXT:chatbot/Resources/Private/Templates/ChatWidget.html
+    variables {
+        turnstileSiteKey = TEXT
+        turnstileSiteKey.value = {$plugin.tx_chatbot_chatbot.turnstile.siteKey}
+    }
+}
+

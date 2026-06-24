@@ -1,0 +1,18 @@
+<f:asset.css
+  identifier="chatbot-css"
+  href="EXT:chatbot/Resources/Public/Css/ChatbotStyle.css"
+/>
+<f:asset.script
+  identifier="chatbot-js"
+  src="EXT:chatbot/Resources/Public/JavaScript/Chatbot.js"
+/>
+
+
+ <div class="chatbot-bubble">
+        <h3 class="chatbot-title">Ocular Chatbot</h3>
+        <div class="chatbot-messages" id="chatbot-messages"></div>
+        <div class="chatbot-input-window">
+<input class="chatbot-input" id="chatbot-input" placeholder="Ask a question" id=""></textarea></div>
+<button id='chatbot-send' data-url="{f:uri.page(pageType: 1589)}">send</button>
+<!-- {f:uri.action(action:'ask')} -->
+    </div>

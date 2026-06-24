@@ -1,0 +1,66 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  Ocular\Chatbot\:
+    resource: "../Classes/*"
+    exclude: "../Classes/Domain/Model/*"
+
+  Psr\Http\Client\ClientInterface:
+    class: GuzzleHttp\Client
+
+  Ocular\Chatbot\Service\RateLimitService: ~
+
+  Ocular\Chatbot\Command\CleanupRateLimitCommand:
+    tags:
+        - name: 'console.command'
+          command: 'chatbot:cleanup-ratelimit'
+          description: 'Deletes rate limit records older than 24 hours'
+          schedulable: true
+
+  Ocular\Chatbot\Command\IngestCommand:
+    tags:
+        - name: 'console.command'
+          command: 'chatbot:ingest'
+          description: 'Crawls Ocular content, embeds chunks via Voyage AI, and ingests them into Qdrant'
+
+    # Qdrant - vector database ingestion (used by chatbot:ingest)
+  Ocular\Chatbot\Service\QdrantIngester:
+    arguments:
+      $config: '@Qdrant\Config'
+      $collectionName: "ocular_chunks"
+      $vectorName: null
+  
+  # Voyage AI - generates embeddings for search queries
+  LLPhant\Embeddings\EmbeddingGenerator\VoyageAI\Voyage4EmbeddingGenerator: ~
+
+  # Qdrant config - connection settings
+  Qdrant\Config:
+    arguments:
+      $host: "qdrant"
+      $port: 6333
+
+  # Qdrant - vector database connection
+  LLPhant\Embeddings\VectorStores\Qdrant\QdrantVectorStore:
+    arguments:
+      $config: '@Qdrant\Config'
+      $collectionName: "ocular_chunks"
+
+  # Groq - LLM that generates the final answer
+  LLPhant\Chat\OpenAIChat:
+    arguments:
+      $config: '@LLPhant\OpenAIConfig'
+
+  LLPhant\OpenAIConfig:
+    arguments:
+      $apiKey: "%env(GROQ_API_KEY)%"
+      $url: "https://api.groq.com/openai/v1/"
+      # $model: "llama-3.1-8b-instant"
+      $model: "qwen/qwen3-32b"
+      $modelOptions:
+        temperature: 0.0
+        max_tokens: 1536
+        reasoning_effort: default
+        reasoning_format: hidden

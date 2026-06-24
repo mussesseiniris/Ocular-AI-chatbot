@@ -1,0 +1,5 @@
+plugin.tx_chatbot_chatbot {
+    turnstile {
+        siteKey = 1x00000000000000000000AA
+    }
+}
