@@ -57,8 +57,6 @@ page.includeJSFooter.ocularPurify = EXT:chatbot/Resources/Public/JavaScript/puri
   page.includeJSFooter.ocularPurify .defer = 1
 page.includeJSFooter.ocularChatbot = EXT:chatbot/Resources/Public/JavaScript/Chatbot.js
 page.includeJSFooter.ocularChatbot.defer = 1
-page.includeJSFooter.turnstile = https://challenges.cloudflare.com/turnstile/v0/api.js
-    page.includeJSFooter.turnstile.external = 1
 
 page.footerData.10 = FLUIDTEMPLATE
 page.footerData.10 {

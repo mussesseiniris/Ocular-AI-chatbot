@@ -49,6 +49,7 @@ class TurnstileService
 
             $responsebody = $response->getBody()->getContents();
             $result = json_decode($responsebody, true);
+            // error_log('[TURNSTILE DEBUG] ' . $body); // temporary
 
             $this->logger->debug('[Turnstile] Cloudflare response: ' . $responsebody);
             $this->logger->error('[TUrnstile] Turnstile response received', [
