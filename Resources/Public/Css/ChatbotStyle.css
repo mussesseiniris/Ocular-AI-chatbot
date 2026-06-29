@@ -62,8 +62,20 @@ font-family: 'Montserrat', sans-serif;
 
 .chatbot-msg {
   max-width: 86%; padding: 10px 14px;
-  font-size: 14px; line-height: 1.55;
+  /* font-size: 14px; line-height: 1.55; */
   overflow-wrap: break-word;
+}
+
+.chatbot-msg,
+.chatbot-msg p,
+.chatbot-msg li,
+.chatbot-msg ul,
+.chatbot-msg ol,
+.chatbot-msg a,
+.chatbot-msg strong,
+.chatbot-msg em {
+  font-size: 14px;
+  line-height: 1.55;
 }
 
 .chatbot-msg p {
