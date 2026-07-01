@@ -125,9 +125,7 @@ class ChatService
             return $answer;
         } catch (\Throwable $e) {
             $this->logger->error('[ChatService] ' . $e->getMessage(), ['exception' => $e]);
-            return $this->jsonResponse(json_encode([
-                'answer' => 'Something went wrong. Please try again.'
-            ]));
+            throw $e;
         }
     }
 
