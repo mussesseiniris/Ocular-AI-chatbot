@@ -42,7 +42,7 @@
 
   function getFreshToken() {
     return new Promise((resolve, reject) => {
-      const container = document.getElementById('cf-turnstile');
+      const container = document.getElementById('cf-turnstile-chatbot');
       if (!container || !window.turnstile) {
         console.log('[Turnstile] Skipping — resolving empty');
         resolve(''); // No Turnstile available (dev environment)
