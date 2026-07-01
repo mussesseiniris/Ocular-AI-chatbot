@@ -6,7 +6,11 @@
         "GPL-2.0-or-later"
     ],
     "require": {
-        "typo3/cms-core": "^13.0"
+        "typo3/cms-core": "^13.0",
+        "theodo-group/llphant": "^0.11.21",
+        "hkulekci/qdrant": "^1.0",
+        "smalot/pdfparser": "^2.12",
+        "symfony/dom-crawler": "^6.4 || ^7.0"
     },
     "autoload": {
         "psr-4": {

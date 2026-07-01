@@ -24,14 +24,16 @@ services:
     tags:
         - name: 'console.command'
           command: 'chatbot:ingest'
-          description: 'Crawls Ocular content, embeds chunks via Voyage AI, and ingests them into Qdrant'
+          description: 'Reads Ocular content, embeds chunks via Voyage AI, and ingests them into Qdrant'
 
     # Qdrant - vector database ingestion (used by chatbot:ingest)
   Ocular\Chatbot\Service\QdrantIngester:
     arguments:
       $config: '@Qdrant\Config'
-      $collectionName: "ocular_chunks"
-      $vectorName: null
+      $collectionName: "%env(QDRANT_COLLECTION)%"
+      # Must match the named vector used when writing (QdrantIngester::addDocument)
+      # and querying (ChatService: ->setUsing('openai')).
+      $vectorName: "openai"
   
   # Voyage AI - generates embeddings for search queries
   LLPhant\Embeddings\EmbeddingGenerator\VoyageAI\Voyage4EmbeddingGenerator: ~
@@ -39,14 +41,14 @@ services:
   # Qdrant config - connection settings
   Qdrant\Config:
     arguments:
-      $host: "qdrant"
-      $port: 6333
+      $host: "%env(QDRANT_HOST)%"
+      $port: "%env(int:QDRANT_PORT)%"
 
   # Qdrant - vector database connection
   LLPhant\Embeddings\VectorStores\Qdrant\QdrantVectorStore:
     arguments:
       $config: '@Qdrant\Config'
-      $collectionName: "ocular_chunks"
+      $collectionName: "%env(QDRANT_COLLECTION)%"
 
   # Groq - LLM that generates the final answer
   LLPhant\Chat\OpenAIChat:
@@ -56,9 +58,8 @@ services:
   LLPhant\OpenAIConfig:
     arguments:
       $apiKey: "%env(OPENAI_API_KEY)%"
-      # $url: "https://api.groq.com/openai/v1/"
-      # $model: "llama-3.1-8b-instant"
-      $model: "gpt-4o-mini"
+      $url: "%env(LLM_API_URL)%"
+      $model: "%env(LLM_MODEL)%"
       $modelOptions:
         # temperature: 0.0
         max_completion_tokens: 1536
