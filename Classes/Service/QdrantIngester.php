@@ -67,4 +67,28 @@ class QdrantIngester extends QdrantVectorStore
 
         $this->client->collections($this->collectionName)->points()->upsert($points);
     }
+
+    /**
+     * Deletes the collection if it exists, then creates a fresh empty one.
+     * Used by `chatbot:ingest --reset` for a clean re-ingest.
+     */
+    public function recreateCollection(int $embeddingLength): void
+    {
+        try {
+            $this->client->collections($this->collectionName)->info();
+            $this->client->collections($this->collectionName)->delete();
+        } catch (Exception) {
+            // Collection didn't exist yet — nothing to delete.
+        }
+
+        $this->createCollection($this->collectionName, $embeddingLength);
+    }
+
+    /**
+     * Ensures the collection exists, creating it (empty) if it does not.
+     */
+    public function ensureCollectionExists(int $embeddingLength): void
+    {
+        $this->createCollectionIfDoesNotExist($this->collectionName, $embeddingLength);
+    }
 }

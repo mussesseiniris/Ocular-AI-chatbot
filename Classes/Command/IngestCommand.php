@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Ocular\Chatbot\Command;
 
-use Ocular\Chatbot\Crawler\AboutUsCrawler;
-use Ocular\Chatbot\Crawler\ArticlesCrawler;
 use Ocular\Chatbot\Crawler\PositioningPdfCrawler;
-use Ocular\Chatbot\Crawler\ProjectsCrawler;
-use Ocular\Chatbot\Crawler\ServiceCrawler;
 use Ocular\Chatbot\Domain\Model\ChunkDocument;
+use Ocular\Chatbot\Provider\AboutUsProvider;
+use Ocular\Chatbot\Provider\ArticleProvider;
+use Ocular\Chatbot\Provider\ProjectProvider;
+use Ocular\Chatbot\Provider\ServiceProvider;
 use Ocular\Chatbot\Embeddings\Voyage4EmbeddingGenerator;
 use Ocular\Chatbot\Service\QdrantIngester;
 use Psr\Log\LoggerInterface;
@@ -24,13 +24,18 @@ class IngestCommand extends Command
     private QdrantIngester $qdrantIngester;
     private LoggerInterface $logger;
 
-    private array $crawlers;
+    /**
+     * Content sources keyed by name. Each exposes buildChunks(). Projects,
+     * articles, services and about-us read straight from the database; positioning
+     * still scrapes the PDF as it has no database source.
+     */
+    private array $sources;
 
     public function __construct(
-        ProjectsCrawler $projectsCrawler,
-        AboutUsCrawler $aboutUsCrawler,
-        ArticlesCrawler $articlesCrawler,
-        ServiceCrawler $serviceCrawler,
+        ProjectProvider $projectProvider,
+        AboutUsProvider $aboutUsProvider,
+        ArticleProvider $articleProvider,
+        ServiceProvider $serviceProvider,
         PositioningPdfCrawler $positioningPdfCrawler,
         Voyage4EmbeddingGenerator $embeddingGenerator,
         QdrantIngester $qdrantIngester,
@@ -42,11 +47,11 @@ class IngestCommand extends Command
         $this->qdrantIngester = $qdrantIngester;
         $this->logger = $logger;
 
-        $this->crawlers = [
-            'projects'    => $projectsCrawler,
-            'about-us'    => $aboutUsCrawler,
-            'articles'    => $articlesCrawler,
-            'services'    => $serviceCrawler,
+        $this->sources = [
+            'projects'    => $projectProvider,
+            'about-us'    => $aboutUsProvider,
+            'articles'    => $articleProvider,
+            'services'    => $serviceProvider,
             'positioning' => $positioningPdfCrawler,
         ];
     }
@@ -54,34 +59,40 @@ class IngestCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Crawls Ocular content sources, embeds the chunks via Voyage AI, and ingests them into Qdrant.')
+            ->setDescription('Reads Ocular content sources, embeds the chunks via Voyage AI, and ingests them into Qdrant.')
             ->addOption(
-                'crawler',
-                'c',
+                'source',
+                's',
                 InputOption::VALUE_OPTIONAL,
-                'Comma-separated list of crawlers to run: projects, about-us, articles, services, positioning, or "all" (default)',
+                'Comma-separated list of sources to run: projects, about-us, articles, services, positioning, or "all" (default)',
                 'all'
+            )
+            ->addOption(
+                'reset',
+                'r',
+                InputOption::VALUE_NONE,
+                'Delete the Qdrant collection and recreate it (empty) before ingesting. WARNING: wipes all existing vectors.'
             );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $requested = (string) $input->getOption('crawler');
+        $requested = (string) $input->getOption('source');
         $names = $requested === 'all'
-            ? array_keys($this->crawlers)
+            ? array_keys($this->sources)
             : array_map('trim', explode(',', $requested));
 
         $selected = [];
         foreach ($names as $name) {
-            if (!isset($this->crawlers[$name])) {
+            if (!isset($this->sources[$name])) {
                 $output->writeln(sprintf(
-                    '<error>Unknown crawler "%s". Available: %s</error>',
+                    '<error>Unknown source "%s". Available: %s</error>',
                     $name,
-                    implode(', ', array_keys($this->crawlers))
+                    implode(', ', array_keys($this->sources))
                 ));
                 return Command::INVALID;
             }
-            $selected[] = $this->crawlers[$name];
+            $selected[] = $this->sources[$name];
         }
 
         $output->writeln('Testing Voyage AI connection...');
@@ -91,64 +102,82 @@ class IngestCommand extends Command
             $output->writeln('<error>Voyage AI returned an empty embedding. Check VOYAGE_AI_API_KEY.</error>');
             return Command::FAILURE;
         }
-        $output->writeln('Embedding length: ' . count($testEmbedding));
+        $embeddingLength = count($testEmbedding);
+        $output->writeln('Embedding length: ' . $embeddingLength);
 
-        foreach ($selected as $crawler) {
-            $crawlerName = (new \ReflectionClass($crawler))->getShortName();
-            $output->writeln("\nCrawling with {$crawlerName}...");
-
-            $chunks = $crawler->buildChunks();
-            $output->writeln('Found ' . count($chunks) . ' chunks');
-
-            foreach ($chunks as $index => $chunk) {
-                $metadata = $chunk['metadata'];
-
-                $output->writeln(sprintf(
-                    'Embedding chunk %d of %d: %s (%s)',
-                    $index + 1,
-                    count($chunks),
-                    $metadata['entityName'] ?? '(unnamed)',
-                    $metadata['chunk_type'] ?? ''
-                ));
-
-                $doc = new ChunkDocument();
-                $doc->content = $chunk['content'];
-                $doc->embeddingText = $chunk['content'];
-                $doc->chunkId = 'chunk_' . strtolower(str_replace(' ', '_', $metadata['entityId'])) . '_' . $metadata['chunk_type'];
-                $doc->entityId = $metadata['entityId'];
-                $doc->entityType = $metadata['entityType'];
-                $doc->entityName = $metadata['entityName'];
-                $doc->serviceTypes = $metadata['serviceTypes'];
-                $doc->tags = $metadata['tags'];
-                $doc->chunkType = $metadata['chunk_type'];
-                $doc->sourceName = $metadata['url'];
-                $doc->articleTypes = $metadata['articleTypes'];
-                $doc->relatedArticles = $metadata['relatedArticles'];
-                $doc->url = $metadata['url'];
-
-                if (empty(trim($doc->content))) {
-                    $output->writeln("SKIPPING: empty content for chunk {$doc->chunkId}");
-                    continue;
-                }
-
-                $doc = $this->embeddingGenerator->embedDocument($doc);
-
-                if (empty($doc->embedding)) {
-                    $this->logger->error('[IngestCommand] Empty embedding for chunk', ['chunk_id' => $doc->chunkId]);
-                    $output->writeln("<error>Empty embedding for chunk: {$doc->chunkId}</error>");
-                    return Command::FAILURE;
-                }
-
-                $this->qdrantIngester->addDocument($doc);
-
-                // Voyage AI free-tier rate limit 
-                sleep(21);
-            }
-
-            $output->writeln("Done with {$crawlerName}!");
+        if ($input->getOption('reset')) {
+            $output->writeln('<comment>Resetting Qdrant collection (deleting existing data and recreating)...</comment>');
+            $this->qdrantIngester->recreateCollection($embeddingLength);
+            $output->writeln('Collection recreated (empty).');
+        } else {
+            // Self-heal: create the collection on first run if it's missing.
+            $this->qdrantIngester->ensureCollectionExists($embeddingLength);
         }
 
-        $output->writeln("\nAll crawlers complete!");
+        // Phase 1: build all chunks from every selected source first (no embedding yet).
+        $allChunks = [];
+        foreach ($selected as $source) {
+            $sourceName = (new \ReflectionClass($source))->getShortName();
+            $output->writeln("\nReading from {$sourceName}...");
+
+            $chunks = $source->buildChunks();
+            $output->writeln('Found ' . count($chunks) . ' chunks');
+
+            foreach ($chunks as $chunk) {
+                $allChunks[] = $chunk;
+            }
+        }
+
+        $total = count($allChunks);
+        $output->writeln("\nCollected {$total} chunks from all sources. Starting embedding...");
+
+        // Phase 2: embed and ingest every collected chunk.
+        foreach ($allChunks as $index => $chunk) {
+            $metadata = $chunk['metadata'];
+
+            $output->writeln(sprintf(
+                'Embedding chunk %d of %d: %s (%s)',
+                $index + 1,
+                $total,
+                $metadata['entityName'] ?? '(unnamed)',
+                $metadata['chunk_type'] ?? ''
+            ));
+
+            $doc = new ChunkDocument();
+            $doc->content = $chunk['content'];
+            $doc->embeddingText = $chunk['content'];
+            $doc->chunkId = 'chunk_' . strtolower(str_replace(' ', '_', $metadata['entityId'])) . '_' . $metadata['chunk_type'];
+            $doc->entityId = $metadata['entityId'];
+            $doc->entityType = $metadata['entityType'];
+            $doc->entityName = $metadata['entityName'];
+            $doc->serviceTypes = $metadata['serviceTypes'];
+            $doc->tags = $metadata['tags'];
+            $doc->chunkType = $metadata['chunk_type'];
+            $doc->sourceName = $metadata['url'];
+            $doc->articleTypes = $metadata['articleTypes'];
+            $doc->relatedArticles = $metadata['relatedArticles'];
+            $doc->url = $metadata['url'];
+
+            if (empty(trim($doc->content))) {
+                $output->writeln("SKIPPING: empty content for chunk {$doc->chunkId}");
+                continue;
+            }
+
+            // embedDocument() mutates $doc in place (sets ->embedding) and returns
+            // it as the parent Document type; not reassigning keeps $doc typed as
+            // ChunkDocument so its custom properties (chunkId, etc.) stay resolvable.
+            $this->embeddingGenerator->embedDocument($doc);
+
+            if (empty($doc->embedding)) {
+                $this->logger->error('[IngestCommand] Empty embedding for chunk', ['chunk_id' => $doc->chunkId]);
+                $output->writeln("<error>Empty embedding for chunk: {$doc->chunkId}</error>");
+                return Command::FAILURE;
+            }
+
+            $this->qdrantIngester->addDocument($doc);
+        }
+
+        $output->writeln("\nAll sources complete!");
         return Command::SUCCESS;
     }
 }
