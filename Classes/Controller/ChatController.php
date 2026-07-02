@@ -26,6 +26,7 @@ class ChatController extends ActionController
         $this->rateLimitService = $rateLimitService;
         $this->logger = $logger;
         $this->turnstileService = $turnstileService;
+        
     }
 
     /**
@@ -98,38 +99,4 @@ class ChatController extends ActionController
       return $this->jsonResponse(json_encode(['history' => $history]));
   }
 
-    // private function verifyTurnstile(string $token, string $secretKey): bool
-    // {
-    //     $secretKey = getenv('TURNSTILE_SECRET_KEY');
-
-    //     if (empty($token)) {
-    //         $this->logger->debug('[Turnstile] Empty token — verification failed');
-    //         return false; 
-    //     }
-
-    //     try {
-    //         $client = new \GuzzleHttp\Client();
-    //         $response = $client->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
-    //             'form_params' => [
-    //                 'secret'   => $secretKey,
-    //                 'response' => $token,
-    //                 'remoteip' => $_SERVER['REMOTE_ADDR'] ?? '',
-    //             ]
-    //         ]);
-
-    //         $body = $response->getBody()->getContents();
-    //         $result = json_decode($body, true);
-
-    //         $this->logger->debug('[Turnstile] Cloudflare response: ' . $body);
-    //         $this->logger->debug('[ChatController] Turnstile response received', [
-    //             'success' => $result['success'] ?? false,
-    //             'error_codes' => $result['error-codes'] ?? [],
-    //         ]);
-            
-    //         return $result['success'] ?? false;
-    //     } catch (\Throwable $e) {
-    //         $this->logger->error('[Turnstile] HTTP request failed: ' . $e->getMessage());
-    //         return false;
-    //     }
-    // }
 }

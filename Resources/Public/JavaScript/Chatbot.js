@@ -74,8 +74,9 @@
       appendMessage(question, 'user');
       input.value = '';
       const pending = appendMessage('…', 'ai');
+      let token;
       try {
-        token = await getFreshToken();
+      token = await getFreshToken();
       } catch (e) {
         pending.textContent = 'Bot verification failed. Please refresh and try again.';
         return;
