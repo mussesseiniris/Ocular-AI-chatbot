@@ -92,6 +92,14 @@ font-family: 'Montserrat', sans-serif;
     padding-left: 1.3em;
 }
 
+/* Guard against site-wide list resets (e.g. ul { list-style: none }) */
+.chatbot-msg ul {
+    list-style: disc;
+}
+.chatbot-msg ol {
+    list-style: decimal;
+}
+
 /* URL link color */
 .chatbot-msg a {
     color: #ff0081;
