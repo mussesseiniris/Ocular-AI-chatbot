@@ -34,6 +34,7 @@ chatbotHistory {
     config {
         disableAllHeaderCode = 1
         additionalHeaders.10.header = Content-Type: application/json
+        additionalHeaders.20.header = Cache-Control: no-store
         admPanel = 0
         debug = 0
         no_cache = 1

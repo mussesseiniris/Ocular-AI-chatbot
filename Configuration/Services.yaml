@@ -50,6 +50,11 @@ services:
       $config: '@Qdrant\Config'
       $collectionName: "%env(QDRANT_COLLECTION)%"
 
+  Ocular\Chatbot\Service\ChatService:
+    arguments:
+      $collectionName: "%env(QDRANT_COLLECTION)%"
+      $siteBaseUrl: "%env(SITE_BASE_URL)%"
+
   # Groq - LLM that generates the final answer
   LLPhant\Chat\OpenAIChat:
     arguments:
@@ -65,3 +70,4 @@ services:
         max_completion_tokens: 1536
         # reasoning_effort: default
         # reasoning_format: hidden
+        

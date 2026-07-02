@@ -19,10 +19,7 @@
 
 # OS
 .DS_Store
-
-.env
-vendor/
 /tmp/
 *.log
-.DS_Store
-EOF
+.env
+vendor/

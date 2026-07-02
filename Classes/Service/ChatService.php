@@ -2,12 +2,9 @@
 
 namespace Ocular\Chatbot\Service;
 
-use Doctrine\DBAL\Schema\UniqueConstraint;
 use Ocular\Chatbot\Embeddings\Voyage4EmbeddingGenerator;
 use LLPhant\Embeddings\VectorStores\Qdrant\QdrantVectorStore;
 use LLPhant\Chat\OpenAIChat;
-use Qdrant\Models\Filter\Condition\MatchAny;
-use Qdrant\Models\Filter\Filter;
 use Qdrant\Models\Request\Points\QueryRequest;
 use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -20,17 +17,23 @@ class ChatService
     private QdrantVectorStore $qdrantVectorStore;
     private OpenAIChat $chat;
     private LoggerInterface $logger;
+    private string $collectionName;
+    private string $siteBaseUrl;
 
     public function __construct(
         Voyage4EmbeddingGenerator $voyage4EmbeddingGenerator,
         QdrantVectorStore $qdrantVectorStore,
         OpenAIChat $chat,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        string $collectionName,
+        string $siteBaseUrl
     ) {
         $this->voyage4EmbeddingGenerator = $voyage4EmbeddingGenerator;
         $this->qdrantVectorStore = $qdrantVectorStore;
         $this->chat = $chat;
         $this->logger = $logger;
+        $this->collectionName = $collectionName;
+        $this->siteBaseUrl = $siteBaseUrl;
     }
 
     public function search(string $question, int $limit = 6): array
@@ -46,9 +49,8 @@ class ChatService
             ->setLimit($limit)
             ->setWithPayload(true);
 
-
         $response = $this->qdrantVectorStore->client
-            ->collections('ocular_chunks')
+            ->collections($this->collectionName)
             ->points()
             ->query()
             ->query($searchRequest);
@@ -59,6 +61,13 @@ class ChatService
     public function ask(string $question, array $history): string
     {
         try {
+
+            if (mb_strlen($question) > 300) {
+                $this->logger->debug('[ChatService] Question rejected: too long', [
+                    'length' => mb_strlen($question),
+                ]);
+                return "That question is a bit long — could you shorten it and try again?";
+            }
             //step 1: Get relevant chunks from vetor databasde(Qdrant)
             $results = $this->search($question);
 
@@ -88,7 +97,7 @@ class ChatService
 
                 $chunksBlock .= "[Source {$n}] " . ($p['entity_type'] ?? '') . ": " . ($p['entity_name'] ?? '');
                 if (!empty($p['url'])) {
-                    $chunksBlock .= " — https://ocular.nz" . $p['url'];
+                    $chunksBlock .="-" . $this->siteBaseUrl  . $p['url'];
                 }
                 $chunksBlock .= "\n" . ($p['content'] ?? '') . "\n";
                 if (!empty($p['tags'])) {
@@ -125,18 +134,19 @@ class ChatService
             return $answer;
         } catch (\Throwable $e) {
             $this->logger->error('[ChatService] ' . $e->getMessage(), ['exception' => $e]);
+            return "Sorry, something went wrong while processing your question. Please try again shortly.";
         }
     }
 
-    public function loadSystemPrompt():String {
-         $path = GeneralUtility::getFileAbsFileName(
-          'EXT:chatbot/Resources/Private/Prompts/SystemPrompt.md'
-      );  
-      $prompt = file_get_contents($path);
-      if ($prompt === false) {
-          throw new \RuntimeException('Could not load system prompt: ' . $path);
-      }   
-      return $prompt;
-        
+    public function loadSystemPrompt(): String
+    {
+        $path = GeneralUtility::getFileAbsFileName(
+            'EXT:chatbot/Resources/Private/Prompts/SystemPrompt.md'
+        );
+        $prompt = file_get_contents($path);
+        if ($prompt === false) {
+            throw new \RuntimeException('Could not load system prompt: ' . $path);
+        }
+        return $prompt;
     }
 }
