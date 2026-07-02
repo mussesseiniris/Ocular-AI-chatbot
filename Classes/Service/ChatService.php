@@ -135,6 +135,7 @@ class ChatService
         } catch (\Throwable $e) {
             $this->logger->error('[ChatService] ' . $e->getMessage(), ['exception' => $e]);
             return "Sorry, something went wrong while processing your question. Please try again shortly.";
+
         }
     }
 
