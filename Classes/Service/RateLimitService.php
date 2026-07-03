@@ -34,35 +34,25 @@ class RateLimitService
 
         $connection = $this->connectionPool->getConnectionForTable('tx_chatbot_rate_limit');
 
-        $record = $connection->select(
+        $existing = $connection->select(
             ['question_count', 'started_at'],
             'tx_chatbot_rate_limit',
             ['ip_hash' => $ipHash]
         )->fetchAssociative();
 
-        // No record — new IP, fall straight through to upsert
-        if (!$record) {
-            $connection->executeStatement(
-                'INSERT INTO tx_chatbot_rate_limit (ip_hash, question_count, started_at)
-                VALUES (:ip_hash, 1, :now)',
-                ['ip_hash' => $ipHash, 'now' => $now]
-            );
-            return true;
+        if ($existing) {
+            $windowExpired = ($now - $existing['started_at']) >= self::WINDOW;
+            if (!$windowExpired && $existing['question_count'] >= self::LIMIT) {
+                return false;
+            }
         }
 
-        $windowExpired = ($now - $record['started_at']) >= self::WINDOW;
-
-        // Within window and over limit — block without touching DB
-        if (!$windowExpired && $record['question_count'] >= self::LIMIT) {
-            return false;
-        }
-
-        // Atomic update — handles window reset and incrementing
         $connection->executeStatement(
-            'UPDATE tx_chatbot_rate_limit SET
+            'INSERT INTO tx_chatbot_rate_limit (ip_hash, question_count, started_at)
+            VALUES (:ip_hash, 1, :now)
+            ON DUPLICATE KEY UPDATE
                 question_count = IF((:now - started_at) >= :window, 1, question_count + 1),
-                started_at     = IF((:now - started_at) >= :window, :now, started_at)
-            WHERE ip_hash = :ip_hash',
+                started_at     = IF((:now - started_at) >= :window, :now, started_at)',
             [
                 'ip_hash' => $ipHash,
                 'now'     => $now,
@@ -70,6 +60,13 @@ class RateLimitService
             ]
         );
 
-        return true;
+        $record = $connection->select(
+            ['question_count'],
+            'tx_chatbot_rate_limit',
+            ['ip_hash' => $ipHash]
+        )->fetchAssociative();
+
+        return ($record['question_count'] ?? 0) <= self::LIMIT;
     }
+    
 }

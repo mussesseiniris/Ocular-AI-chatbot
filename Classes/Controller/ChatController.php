@@ -37,8 +37,6 @@ class ChatController extends ActionController
     public function askAction(): ResponseInterface
     {   
         $this->logger->debug('[ChatController] askAction called');
-        $this->logger->debug('[ChatController] token argument: ' . ($this->request->hasArgument('turnstileToken') ? 'present' : 'MISSING'));
-        $this->logger->debug('[ChatController] secret key set: ' . (empty(getenv('TURNSTILE_SECRET_KEY')) ? 'NO' : 'yes'));
         try {
             $ip = $this->request->getAttribute('normalizedParams')->getRemoteAddress();
 

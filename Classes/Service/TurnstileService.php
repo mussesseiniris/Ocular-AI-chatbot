@@ -52,10 +52,12 @@ class TurnstileService
             // error_log('[TURNSTILE DEBUG] ' . $body); // temporary
 
             $this->logger->debug('[Turnstile] Cloudflare response: ' . $responsebody);
-            $this->logger->error('[TUrnstile] Turnstile response received', [
-                'success' => $result['success'] ?? false,
-                'error_codes' => $result['error-codes'] ?? [],
-            ]);
+            
+            if (!($result['success'] ?? false)) {
+                $this->logger->warning('[Turnstile] Verification failed', [
+                    'error_codes' => $result['error-codes'] ?? [],
+                ]);
+            }
 
             return $result['success'] ?? false;
         } catch (\Throwable $e) {
