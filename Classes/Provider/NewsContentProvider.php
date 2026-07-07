@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Ocular\Chatbot\Provider;
 
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
-use TYPO3\CMS\Core\Database\Query\Restriction\HiddenRestriction;
 use Doctrine\DBAL\ParameterType;
 
 abstract class NewsContentProvider
@@ -29,9 +27,6 @@ abstract class NewsContentProvider
     {
 
         $qb = $this->connectionPool->getQueryBuilderForTable($this->newsTable);
-        $qb->getRestrictions()->removeAll()
-            ->add(new DeletedRestriction())
-            ->add(new HiddenRestriction());
 
         return $qb->select('uid', 'title', 'teaser', 'bodytext', 'path_segment')
             ->from($this->newsTable)
@@ -86,9 +81,6 @@ abstract class NewsContentProvider
         $catagoryTable = 'sys_category';
         $middleTable = 'sys_category_record_mm';
         $qb = $this->connectionPool->getQueryBuilderForTable($catagoryTable);
-        $qb->getRestrictions()->removeAll()
-            ->add(new DeletedRestriction())
-            ->add(new HiddenRestriction());
 
         return $qb->select('c.title')
             ->from($catagoryTable, 'c')
