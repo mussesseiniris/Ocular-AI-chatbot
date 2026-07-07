@@ -3,11 +3,13 @@
 declare(strict_types=1);
 
 namespace Ocular\Chatbot\Provider;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 
 class ArticleProvider extends NewsContentProvider
 {
 
-    protected function getStoragePid(): int    { return 19; }
+    protected function getStoragePid(): int    
+    { return (int) $this->extensionConfiguration->get('chatbot', 'articlePid'); }
     protected function getEntityType(): string { return 'article'; }
     protected function getUrlPrefix(): string  { return '/article/'; }
 

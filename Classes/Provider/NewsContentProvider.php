@@ -6,13 +6,16 @@ namespace Ocular\Chatbot\Provider;
 
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use Doctrine\DBAL\ParameterType;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+
 
 abstract class NewsContentProvider
 {
     use HtmlToTextTrait;
 
     public function __construct(
-        private readonly ConnectionPool $connectionPool
+        private readonly ConnectionPool $connectionPool,
+        protected readonly ExtensionConfiguration $extensionConfiguration
     ) {}
 
     abstract protected function getStoragePid(): int;
@@ -51,7 +54,7 @@ abstract class NewsContentProvider
             $slug       = trim((string) $news['path_segment'], '/');
             $categories = $this->fetchCategory((int) $news['uid']);
 
-            // 公共 metadata —— project / article 都一样
+          
             $shared = [
                 'name'            => $title,
                 'entityType'      => $this->getEntityType(),
@@ -64,7 +67,7 @@ abstract class NewsContentProvider
                 'relatedArticles' => [],
             ];
 
-            // ↓ 会变的那一步：每条记录怎么切 chunk，交给子类
+            
             foreach ($this->buildRecordChunks($news, $shared) as $chunk) {
                 $chunks[] = $chunk;
             }

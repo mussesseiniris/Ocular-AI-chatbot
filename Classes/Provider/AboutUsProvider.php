@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ocular\Chatbot\Provider;
 
 use Doctrine\DBAL\ParameterType;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
 /**
@@ -26,10 +27,14 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 class AboutUsProvider
 {
     use HtmlToTextTrait;
-
-    private const STORAGE_PID = 2;
-
+    private int $STORAGE_PID;
     private string $contentTable = 'tt_content';
+    public function __construct(
+        private readonly ConnectionPool $connectionPool,
+        ExtensionConfiguration $extensionConfiguration
+    ) {
+        $this->STORAGE_PID = (int)$extensionConfiguration->get('chatbot', 'aboutUsPid');
+    }
 
     /**
      * Maps department headings to the serviceTypes vocabulary used in projects.
@@ -49,10 +54,6 @@ class AboutUsProvider
         'Online'                  => ['Web Development', 'Platform Architecture', 'CRM'],
         'Creative and Video'      => ['Video', 'Graphic Design', 'Brand', 'UX Design'],
     ];
-
-    public function __construct(
-        private readonly ConnectionPool $connectionPool
-    ) {}
 
     /**
      * @return array List of chunks with 'content' and 'metadata'
@@ -154,7 +155,7 @@ class AboutUsProvider
         $rows = $qb->select('bodytext', 'tx_container_parent')
             ->from($this->contentTable)
             ->where(
-                $qb->expr()->eq('pid', $qb->createNamedParameter(self::STORAGE_PID, ParameterType::INTEGER)),
+                $qb->expr()->eq('pid', $qb->createNamedParameter($this->STORAGE_PID, ParameterType::INTEGER)),
                 $qb->expr()->eq('CType', $qb->createNamedParameter('text')),
                 $qb->expr()->neq('bodytext', $qb->createNamedParameter(''))
             )
@@ -265,7 +266,7 @@ class AboutUsProvider
         $rows = $qb->select('uid', 'header', 'sorting', 'tx_container_parent')
             ->from($this->contentTable)
             ->where(
-                $qb->expr()->eq('pid', $qb->createNamedParameter(self::STORAGE_PID, ParameterType::INTEGER)),
+                $qb->expr()->eq('pid', $qb->createNamedParameter($this->STORAGE_PID, ParameterType::INTEGER)),
                 $qb->expr()->eq('CType', $qb->createNamedParameter('header')),
                 $qb->expr()->in(
                     'header',
@@ -292,7 +293,7 @@ class AboutUsProvider
         return $qb->select('uid', 'sorting')
             ->from($this->contentTable)
             ->where(
-                $qb->expr()->eq('pid', $qb->createNamedParameter(self::STORAGE_PID, ParameterType::INTEGER)),
+                $qb->expr()->eq('pid', $qb->createNamedParameter($this->STORAGE_PID, ParameterType::INTEGER)),
                 $qb->expr()->eq('CType', $qb->createNamedParameter('flex-container')),
                 $qb->expr()->eq('tx_container_parent', $qb->createNamedParameter($teamContainerUid, ParameterType::INTEGER))
             )
@@ -313,7 +314,7 @@ class AboutUsProvider
         return $qb->select('bodytext')
             ->from($this->contentTable)
             ->where(
-                $qb->expr()->eq('pid', $qb->createNamedParameter(self::STORAGE_PID, ParameterType::INTEGER)),
+                $qb->expr()->eq('pid', $qb->createNamedParameter($this->STORAGE_PID, ParameterType::INTEGER)),
                 $qb->expr()->eq('CType', $qb->createNamedParameter('textpic')),
                 $qb->expr()->eq('tx_container_parent', $qb->createNamedParameter($flexContainerUid, ParameterType::INTEGER))
             )

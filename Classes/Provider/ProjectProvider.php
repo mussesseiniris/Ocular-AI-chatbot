@@ -6,7 +6,8 @@ namespace Ocular\Chatbot\Provider;
 
 class ProjectProvider extends NewsContentProvider
 {
-    protected function getStoragePid(): int    { return 12; }
+    protected function getStoragePid(): int    
+    { return (int) $this->extensionConfiguration->get('chatbot', 'projectPid'); }
     protected function getEntityType(): string { return 'project'; }
     protected function getUrlPrefix(): string  { return '/project/'; }
 
