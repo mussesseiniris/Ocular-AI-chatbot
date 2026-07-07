@@ -2,4 +2,9 @@ plugin.tx_chatbot_chatbot {
     turnstile {
         siteKey = 0x4AAAAAADuJeGCOVl6OD9iF
     }
+
+    contact {
+        resultsEmail = results@ocular.nz
+        supportEmail = support@ocular.nz
+    }
 }

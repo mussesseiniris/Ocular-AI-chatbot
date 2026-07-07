@@ -44,18 +44,18 @@
     return new Promise((resolve, reject) => {
       const container = document.getElementById('cf-turnstile-chatbot');
       if (!container || !window.turnstile) {
-        console.log('[Turnstile] Skipping — resolving empty');
+        // console.log('[Turnstile] Skipping — resolving empty');
         resolve(''); // No Turnstile available (dev environment)
         return;
       }
       turnstile.reset(container);
       turnstile.execute(container, {
         callback: (token) => {
-          console.log('[Turnstile] Token received:', token ? 'yes' : 'empty');
+          // console.log('[Turnstile] Token received:', token ? 'yes' : 'empty');
           resolve(token);
         },
         'error-callback': (err) => {
-          console.log('[Turnstile] Error:', err);
+          // console.log('[Turnstile] Error:', err);
           reject(new Error('Turnstile verification failed'));
         },
       });
