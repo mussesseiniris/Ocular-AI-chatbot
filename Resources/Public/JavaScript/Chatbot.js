@@ -61,7 +61,11 @@
       });
     });
   }
-
+  function setInputDisabled(disabled, placeholderText) {
+    input.disabled = disabled;
+    sendBtn.disabled = disabled;
+    if (disabled && placeholderText) input.placeholder = placeholderText;
+  }
   let isSending = false;
 
   async function send() {
@@ -94,12 +98,22 @@
         });
 
         const data = await res.json();
-
         const answer = data.answer || 'Sorry, something went wrong. Please try again.';
-        pending.innerHTML = DOMPurify.sanitize(marked.parse(answer));
 
+        if (res.status === 429) {
+          pending.textContent = answer;
+          pending.className = 'chatbot-msg chatbot-msg--error-limit';
+          setInputDisabled(true, data.answer);
+        } else if (!res.ok) {
+          pending.textContent = answer;
+          pending.className = 'chatbot-msg chatbot-msg--error';
+        } else {
+          pending.innerHTML = DOMPurify.sanitize(marked.parse(answer));
+          pending.className = 'chatbot-msg chatbot-msg--ai';
+        }
       } catch (e) {
         pending.textContent = 'Sorry, something went wrong. Please try again.';
+        pending.className = 'chatbot-msg chatbot-msg--error';
       }
       messages.scrollTop = messages.scrollHeight;
     }
