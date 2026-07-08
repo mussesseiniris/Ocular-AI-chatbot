@@ -11,7 +11,7 @@ TYPO3 v13 extension that adds a RAG (Retrieval-Augmented Generation) AI chatbot 
    - Embeds the question and searches Qdrant for the most relevant chunks.
    - Builds a prompt (system prompt + retrieved chunks + recent conversation history) and sends it to an OpenAI-compatible LLM via **LLPhant**.
    - Returns the answer as JSON and stores the turn in the frontend user's session.
-3. **History** — a separate endpoint returns the stored conversation history for the current session.
+3. **History** — a separate endpoint returns the stored cogotnversation history for the current session.
 
 ## Architecture
 

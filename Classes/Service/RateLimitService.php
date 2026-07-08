@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ocular\Chatbot\Service;
 
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use Psr\Log\LoggerInterface;
 
 class RateLimitService
 {
@@ -17,11 +18,20 @@ class RateLimitService
     private string $secret;
 
     private ConnectionPool $connectionPool;
+    private LoggerInterface $logger;
 
-    public function __construct(ConnectionPool $connectionPool)
+    public function __construct(ConnectionPool $connectionPool, LoggerInterface $logger)
     {
         $this->connectionPool = $connectionPool;
-        $this->secret = getenv('RATE_LIMIT_SECRET') ?: 'fallback-secret-change-me';
+        $this->logger = $logger;
+
+        $configuredSecret = getenv('RATE_LIMIT_SECRET');
+        if (empty($configuredSecret)) {
+            $this->logger->error('[RateLimitService] RATE_LIMIT_SECRET is not set — falling back to a weak, publicly-known default. IP hashing is not effective until this is configured.');
+            $this->secret = 'fallback-secret-change-me';
+        } else {
+            $this->secret = $configuredSecret;
+        }
     }
 
     /**
