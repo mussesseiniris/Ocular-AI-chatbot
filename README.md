@@ -31,10 +31,6 @@ Classes/
 │   └── HtmlToTextTrait.php
 ├── Crawler/                         Legacy/PDF sources (no DB equivalent)
 │   ├── PositioningPdfCrawler.php
-│   ├── AboutUsCrawler.php
-│   ├── ArticlesCrawler.php
-│   ├── ProjectsCrawler.php
-│   └── ServiceCrawler.php
 ├── Embeddings/
 │   └── Voyage4EmbeddingGenerator.php  Voyage AI (voyage-4) embedding client
 └── Service/
