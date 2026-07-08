@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Ocular\Chatbot\Crawler;
 
-use PhpParser\Node\Scalar\MagicConst\Dir;
 use Smalot\PdfParser\Parser;
 
 class PositioningPdfCrawler
@@ -48,8 +47,8 @@ class PositioningPdfCrawler
                     'tags' => $pageTags[$pageIndex],
                     'serviceTypes' => [],
                     'entityType'   => $pageEntityTypes[$pageIndex],
-                    'entityId'     => '',
-                    'entityName'   => '',
+                    'entityId'     => $pageChunkTypes[$pageIndex] . '_' . $pageEntityTypes[$pageIndex],
+                    'entityName'   => $pageChunkTypes[$pageIndex],
                     'articleTypes' => [],
                     'relatedArticles' => [],
                 ],

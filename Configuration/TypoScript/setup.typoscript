@@ -65,6 +65,10 @@ page.footerData.10 {
     variables {
         turnstileSiteKey = TEXT
         turnstileSiteKey.value = {$plugin.tx_chatbot_chatbot.turnstile.siteKey}
+        supportEmail = TEXT
+        supportEmail.value = {$plugin.tx_chatbot_chatbot.contact.supportEmail}
+        resultsEmail = TEXT 
+        results.value = {$plugin.tx_chatbot_chatbot.contact.resultsEmail}
     }
 }
 

@@ -8,6 +8,7 @@ use LLPhant\Chat\OpenAIChat;
 use Qdrant\Models\Request\Points\QueryRequest;
 use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
 
 
 class ChatService
@@ -19,6 +20,7 @@ class ChatService
     private LoggerInterface $logger;
     private string $collectionName;
     private string $siteBaseUrl;
+    private ConfigurationManagerInterface $configurationManager;
 
     public function __construct(
         Voyage4EmbeddingGenerator $voyage4EmbeddingGenerator,
@@ -26,7 +28,8 @@ class ChatService
         OpenAIChat $chat,
         LoggerInterface $logger,
         string $collectionName,
-        string $siteBaseUrl
+        string $siteBaseUrl,
+        ConfigurationManagerInterface $configurationManager
     ) {
         $this->voyage4EmbeddingGenerator = $voyage4EmbeddingGenerator;
         $this->qdrantVectorStore = $qdrantVectorStore;
@@ -34,6 +37,7 @@ class ChatService
         $this->logger = $logger;
         $this->collectionName = $collectionName;
         $this->siteBaseUrl = $siteBaseUrl;
+        $this->configurationManager = $configurationManager;
     }
 
     public function search(string $question, int $limit = 6): array
@@ -149,6 +153,20 @@ class ChatService
         if ($prompt === false) {
             throw new \RuntimeException('Could not load system prompt: ' . $path);
         }
+        $settings = $this->configurationManager->getConfiguration(
+            ConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS,
+            'Chatbot',
+            'Chatbot'
+        );
+
+        $prompt = str_replace(
+            ['{resultsEmail}', '{supportEmail}'],
+            [
+                $settings['contact']['resultsEmail'] ?? 'results@ocular.nz',
+                $settings['contact']['supportEmail'] ?? 'support@ocular.nz',
+            ],
+            $prompt
+        );
         return $prompt;
     }
 }
