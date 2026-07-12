@@ -26,5 +26,11 @@ defined('TYPO3') or die();
         [ \Ocular\Chatbot\Controller\ChatController::class => 'history' ],
         [ \Ocular\Chatbot\Controller\ChatController::class => 'history' ]
     );
+
+    $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['processDatamapClass'][]
+        = \Ocular\Chatbot\Hooks\ChunkSyncHook::class;
+
+    $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['processCmdmapClass'][]
+        = \Ocular\Chatbot\Hooks\ChunkSyncHook::class;
 })();
 

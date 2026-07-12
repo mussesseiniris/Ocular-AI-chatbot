@@ -96,7 +96,7 @@ class AboutUsProvider
                 'metadata' => [
                     'name'            => $member['name'],
                     'entityType'      => 'person',
-                    'entityId'        => 'person_' . strtolower(str_replace([' ', "'"], ['_', ''], $member['name'])),
+                    'entityId'        => 'person_' . $member['uid'],
                     'entityName'      => $member['name'],
                     'chunk_type'      => 'team_member',
                     'department'      => $member['department'],
@@ -216,7 +216,7 @@ class AboutUsProvider
     /**
      * Resolves the live team members grouped by department.
      *
-     * @return array<int, array{name: string, role: string, department: string}>
+     * @return array<int, array{uid: int, name: string, role: string, department: string}>
      */
     private function fetchTeamMembers(): array
     {
@@ -238,13 +238,14 @@ class AboutUsProvider
                 continue;
             }
 
-            foreach ($this->fetchTextpicChildren((int) $flexContainer['uid']) as $bodytext) {
-                $parsed = $this->parseMember((string) $bodytext);
+            foreach ($this->fetchTextpicChildren((int) $flexContainer['uid']) as $textpic) {
+                $parsed = $this->parseMember((string) $textpic['bodytext']);
                 if ($parsed === null) {
                     continue;
                 }
 
                 $members[] = [
+                    'uid'        => (int) $textpic['uid'],
                     'name'       => $parsed['name'],
                     'role'       => $parsed['role'],
                     'department' => $department,
@@ -312,7 +313,7 @@ class AboutUsProvider
     {
         $qb = $this->createRestrictedQueryBuilder();
 
-        return $qb->select('bodytext')
+        return $qb->select('uid', 'bodytext')
             ->from($this->contentTable)
             ->where(
                 $qb->expr()->eq('pid', $qb->createNamedParameter(self::STORAGE_PID, ParameterType::INTEGER)),
@@ -321,7 +322,7 @@ class AboutUsProvider
             )
             ->orderBy('sorting')
             ->executeQuery()
-            ->fetchFirstColumn();
+            ->fetchAllAssociative();
     }
 
     /**

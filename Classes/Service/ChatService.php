@@ -60,7 +60,7 @@ class ChatService
             ->query($searchRequest);
 
         return $response->__toArray()['result']['points'];
-    }
+    } 
 
     public function ask(string $question, array $history): ChatResult
     {

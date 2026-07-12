@@ -91,4 +91,26 @@ class QdrantIngester extends QdrantVectorStore
     {
         $this->createCollectionIfDoesNotExist($this->collectionName, $embeddingLength);
     }
+
+    public function deleteEntityId(string $entityId): void  
+    {
+        $filter = new Filter();
+        $filter->addMust(new MatchString('entity_id', $entityId));
+
+        $response = $this->client
+            ->collections($this->collectionName)
+            ->points()
+            ->deleteByFilter($filter);
+    }
+
+    public function deleteByEntityType(string $entityType): void
+    {
+        $filter = new Filter();
+        $filter->addMust(new MatchString('entity_type', $entityType));
+
+        $this->client
+            ->collections($this->collectionName)
+            ->points()
+            ->deleteByFilter($filter);
+    }
 }

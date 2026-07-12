@@ -60,7 +60,7 @@ abstract class NewsContentProvider
             $shared = [
                 'name'            => $title,
                 'entityType'      => $this->getEntityType(),
-                'entityId'        => $this->getEntityType() . '_' . preg_replace('/[^a-z0-9_]/', '_', strtolower($slug)),
+                'entityId'        => $this->getEntityType() . '_' . $news['uid'],
                 'entityName'      => $title,
                 'url'             => $this->getUrlPrefix() . $slug . '/',
                 'tags'            => $categories,
@@ -76,6 +76,31 @@ abstract class NewsContentProvider
         }
 
         return $chunks;
+    }
+
+    public function buildChunksForUid(int $uid): array
+    {
+        $news = $this->fetchRawRecord($uid);
+        if ($news === null || (int) $news['pid'] !== $this->getStoragePid()) {
+            return [];
+        }
+
+        $slug       = trim((string) $news['path_segment'], '/');
+        $categories = $this->fetchCategory($uid);
+
+        $shared = [
+            'name'            => trim((string) $news['title']),
+            'entityType'      => $this->getEntityType(),
+            'entityId'        => $this->getEntityType() . '_' . $uid,
+            'entityName'      => trim((string) $news['title']),
+            'url'             => $this->getUrlPrefix() . $slug . '/',
+            'tags'            => $categories,
+            'serviceTypes'    => [],
+            'articleTypes'    => [],
+            'relatedArticles' => [],
+        ];
+
+        return $this->buildRecordChunks($news, $shared);
     }
 
     // public function buildChunks(): array {}
