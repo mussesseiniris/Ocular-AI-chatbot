@@ -7,6 +7,8 @@ namespace Ocular\Chatbot\Provider;
 use Doctrine\DBAL\ParameterType;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\Restriction\FrontendGroupRestriction;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * Builds chatbot chunks for the About Us page straight from the database.
@@ -391,6 +393,7 @@ class AboutUsProvider
     private function createRestrictedQueryBuilder()
     {
         $qb = $this->connectionPool->getQueryBuilderForTable($this->contentTable);
+        $qb->getRestrictions()->add(GeneralUtility::makeInstance(FrontendGroupRestriction::class));
         return $qb;
     }
 }

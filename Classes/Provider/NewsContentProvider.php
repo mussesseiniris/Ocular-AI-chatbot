@@ -7,6 +7,8 @@ namespace Ocular\Chatbot\Provider;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use Doctrine\DBAL\ParameterType;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Database\Query\Restriction\FrontendGroupRestriction;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 
 abstract class NewsContentProvider
@@ -30,6 +32,7 @@ abstract class NewsContentProvider
     {
 
         $qb = $this->connectionPool->getQueryBuilderForTable($this->newsTable);
+        $qb->getRestrictions()->add(GeneralUtility::makeInstance(FrontendGroupRestriction::class));
 
         return $qb->select('uid', 'title', 'teaser', 'bodytext', 'path_segment')
             ->from($this->newsTable)
