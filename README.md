@@ -29,12 +29,8 @@ Classes/
 │   ├── ServiceProvider.php
 │   ├── NewsContentProvider.php
 │   └── HtmlToTextTrait.php
-├── Crawler/                         Legacy/PDF sources (no DB equivalent)
-│   ├── PositioningPdfCrawler.php
-│   ├── AboutUsCrawler.php
-│   ├── ArticlesCrawler.php
-│   ├── ProjectsCrawler.php
-│   └── ServiceCrawler.php
+├── Crawler/                         PDF source (no DB equivalent)
+│   └── PositioningPdfCrawler.php
 ├── Embeddings/
 │   └── Voyage4EmbeddingGenerator.php  Voyage AI (voyage-4) embedding client
 └── Service/
@@ -52,7 +48,7 @@ Classes/
 - A Voyage AI API key (embeddings)
 - An OpenAI-compatible LLM endpoint (e.g. Groq) and API key
 
-Composer dependencies: `theodo-group/llphant`, `hkulekci/qdrant`, `smalot/pdfparser`, `symfony/dom-crawler`.
+Composer dependencies: `theodo-group/llphant`, `hkulekci/qdrant`, `smalot/pdfparser`.
 
 ## Configuration
 
@@ -69,15 +65,30 @@ Set the following environment variables (e.g. in `.env`):
 | `QDRANT_COLLECTION` | Qdrant collection name (chunks are stored under the `openai` named vector) |
 | `RATE_LIMIT_SECRET` | Secret used to hash IPs before storing them for rate limiting |
 | `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret key; requests are blocked if unset |
+| `SITE_BASE_URL` | Public base URL of the site (e.g. `https://ocular.nz`), prepended to source links in answers |
 
 The Turnstile **site key** is configured via TypoScript constant `plugin.tx_chatbot_chatbot.turnstile.siteKey`.
+
+### Extension configuration
+
+The storage page IDs the content providers read from are set in **Admin Tools > Settings > Extension Configuration > chatbot**:
+
+| Setting | Purpose | Default |
+|---|---|---|
+| `aboutUsPid` | Page ID of the About Us page | 2 |
+| `servicePid` | Page ID of the Services page | 6 |
+| `projectPid` | Storage folder ID of project news records | 12 |
+| `articlePid` | Storage folder ID of article news records | 19 |
+
+On a fresh install, verify these match the actual page tree — a wrong PID makes the corresponding source silently produce zero chunks.
 
 ## Installation
 
 1. Require the extension via Composer and activate it in the TYPO3 backend.
 2. Run the database compare (Admin Tools > Maintenance) to create the `tx_chatbot_rate_limit` table.
 3. Set the environment variables listed above.
-4. Add the `Chatbot` and `History` plugins to a page, or rely on the `chatbotAjax` / `chatbotHistory` page types wired up in TypoScript for the JS widget.
+4. Check the storage page IDs in the extension configuration (see above).
+5. Add the `Chatbot` and `History` plugins to a page, or rely on the `chatbotAjax` / `chatbotHistory` page types wired up in TypoScript for the JS widget.
 
 ## Usage
 
@@ -90,6 +101,8 @@ vendor/bin/typo3 chatbot:ingest
 Options:
 - `--source|-s` — comma-separated list of sources to run: `projects`, `about-us`, `articles`, `services`, `positioning`, or `all` (default).
 - `--reset|-r` — deletes and recreates the Qdrant collection before ingesting (wipes existing vectors).
+
+> **Note — stale vectors:** ingestion is upsert-only. Deleting a record in the CMS, or changing its slug (which changes the chunk ID), leaves the old vector in Qdrant and the chatbot will keep answering from it. Run `chatbot:ingest --reset` after deleting or renaming content, and consider scheduling a periodic full re-ingest.
 
 ### Clean up expired rate-limit records
 
@@ -107,5 +120,6 @@ Deletes rate-limit rows older than 24 hours; intended to run on a schedule (alre
 ## Notes
 
 - The system prompt is loaded from `Resources/Private/Prompts/SystemPrompt.md` at request time.
-- Conversation history is capped at the last 6 turns and stored in the frontend user's session.
+- Conversation history is capped at the last 6 messages (3 question-answer exchanges) and stored in the frontend user's session.
+- Questions are limited to 300 characters server-side.
 - This extension is at an early (`alpha`) stage.
