@@ -88,7 +88,6 @@ class AboutUsProvider
 
         // One chunk per person — answers "Who does UX at Ocular?" / "Who is the director?"
         foreach ($members as $member) {
-            echo "Processing team member: {$member['name']}\n";
 
             $content = "{$member['name']} is {$member['role']} at OCULAR, working in the {$member['department']} team.";
 

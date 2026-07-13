@@ -94,7 +94,6 @@ class ServiceProvider
 
         foreach ($this->fetchServices() as $service) {
             $name = $service['name'];
-            echo "Processing service: {$name}\n";
 
             $description = $this->htmlToText($this->stripCtaButtons((string) $service['description']));
             if ($description === '') {

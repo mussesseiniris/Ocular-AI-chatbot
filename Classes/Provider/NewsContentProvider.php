@@ -52,7 +52,6 @@ abstract class NewsContentProvider
 
         foreach ($this->fetchNews() as $news) {
             $title = trim((string) $news['title']);
-            echo "Processing {$this->getEntityType()}: {$title}\n";
 
             $slug       = trim((string) $news['path_segment'], '/');
             $categories = $this->fetchCategory((int) $news['uid']);
