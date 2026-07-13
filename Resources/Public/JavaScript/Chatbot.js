@@ -73,11 +73,13 @@
     try {
       appendMessage(question, 'user');
       input.value = '';
-      const pending = appendMessage('…', 'ai');
+      const pending = appendMessage('Thinking', 'ai');
+      pending.classList.add('chatbot-msg--pending');
       let token;
       try {
       token = await getFreshToken();
       } catch (e) {
+        pending.classList.remove('chatbot-msg--pending');
         pending.textContent = 'Bot verification failed. Please refresh and try again.';
         return;
       }
@@ -94,11 +96,12 @@
         });
 
         const data = await res.json();
-
         const answer = data.answer || 'Sorry, something went wrong. Please try again.';
+        pending.classList.remove('chatbot-msg--pending'); 
         pending.innerHTML = DOMPurify.sanitize(marked.parse(answer));
 
       } catch (e) {
+        pending.classList.remove('chatbot-msg--pending');
         pending.textContent = 'Sorry, something went wrong. Please try again.';
       }
       messages.scrollTop = messages.scrollHeight;
