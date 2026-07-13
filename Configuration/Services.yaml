@@ -34,9 +34,6 @@ services:
       # Must match the named vector used when writing (QdrantIngester::addDocument)
       # and querying (ChatService: ->setUsing('openai')).
       $vectorName: "openai"
-  
-  # Voyage AI - generates embeddings for search queries
-  LLPhant\Embeddings\EmbeddingGenerator\VoyageAI\Voyage4EmbeddingGenerator: ~
 
   # Qdrant config - connection settings
   Qdrant\Config:

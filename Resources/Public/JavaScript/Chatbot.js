@@ -44,24 +44,28 @@
     return new Promise((resolve, reject) => {
       const container = document.getElementById('cf-turnstile-chatbot');
       if (!container || !window.turnstile) {
-        console.log('[Turnstile] Skipping — resolving empty');
+        // console.log('[Turnstile] Skipping — resolving empty');
         resolve(''); // No Turnstile available (dev environment)
         return;
       }
       turnstile.reset(container);
       turnstile.execute(container, {
         callback: (token) => {
-          console.log('[Turnstile] Token received:', token ? 'yes' : 'empty');
+          // console.log('[Turnstile] Token received:', token ? 'yes' : 'empty');
           resolve(token);
         },
         'error-callback': (err) => {
-          console.log('[Turnstile] Error:', err);
+          // console.log('[Turnstile] Error:', err);
           reject(new Error('Turnstile verification failed'));
         },
       });
     });
   }
-
+  function setInputDisabled(disabled, placeholderText) {
+    input.disabled = disabled;
+    sendBtn.disabled = disabled;
+    if (disabled && placeholderText) input.placeholder = placeholderText;
+  }
   let isSending = false;
 
   async function send() {
@@ -100,9 +104,21 @@
         pending.classList.remove('chatbot-msg--pending'); 
         pending.innerHTML = DOMPurify.sanitize(marked.parse(answer));
 
+        if (res.status === 429) {
+          pending.textContent = answer;
+          pending.className = 'chatbot-msg chatbot-msg--error-limit';
+          setInputDisabled(true, data.answer);
+        } else if (!res.ok) {
+          pending.textContent = answer;
+          pending.className = 'chatbot-msg chatbot-msg--error';
+        } else {
+          pending.innerHTML = DOMPurify.sanitize(marked.parse(answer));
+          pending.className = 'chatbot-msg chatbot-msg--ai';
+        }
       } catch (e) {
         pending.classList.remove('chatbot-msg--pending');
         pending.textContent = 'Sorry, something went wrong. Please try again.';
+        pending.className = 'chatbot-msg chatbot-msg--error';
       }
       messages.scrollTop = messages.scrollHeight;
     }

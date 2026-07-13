@@ -37,15 +37,14 @@ class ChatController extends ActionController
     public function askAction(): ResponseInterface
     {   
         $this->logger->debug('[ChatController] askAction called');
-        $this->logger->debug('[ChatController] token argument: ' . ($this->request->hasArgument('turnstileToken') ? 'present' : 'MISSING'));
-        $this->logger->debug('[ChatController] secret key set: ' . (empty(getenv('TURNSTILE_SECRET_KEY')) ? 'NO' : 'yes'));
         try {
             $ip = $this->request->getAttribute('normalizedParams')->getRemoteAddress();
+            $resultsEmail = $this->settings['contact']['resultsEmail'] ?? 'results@ocular.nz';
 
             if (!$this->turnstileService->isConfigured()) {
                 $this->logger->error('[Turnstile] TURNSTILE_SECRET_KEY is not set — blocking all requests');
                 return $this->jsonResponse(json_encode([
-                    'answer' => 'Service configuration error. Please contact us at results@ocular.nz.'
+                    'answer' => "Service configuration error. Please contact us at {$resultsEmail}."
                 ]));
             }
 
@@ -61,13 +60,15 @@ class ChatController extends ActionController
             }
 
             if (!$this->request->hasArgument('question')) {
-                return $this->htmlResponse($this->view->render());
+                return $this->jsonResponse(json_encode([
+                    'answer' => 'No question provided. Please input a question and try again.'
+                ]))->withStatus(400);
             }
             
             // this->logger->debug('[ChatController] IP resolved as: ' . $ip);
             if (!$this->rateLimitService->isAllowed($ip)) {
                 return $this->jsonResponse(json_encode([
-                    'answer' => 'You have reached the daily question limit. Please try again tomorrow or contact us at results@ocular.nz for further help.'
+                    'answer' => "You have reached the daily question limit. Please try again tomorrow or contact us at {$resultsEmail} for further help."
                 ]))->withStatus(429);
             }
 

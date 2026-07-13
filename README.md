@@ -29,8 +29,13 @@ Classes/
 │   ├── ServiceProvider.php
 │   ├── NewsContentProvider.php
 │   └── HtmlToTextTrait.php
+<<<<<<< HEAD
 ├── Crawler/                         PDF source (no DB equivalent)
 │   └── PositioningPdfCrawler.php
+=======
+├── Crawler/                         Legacy/PDF sources (no DB equivalent)
+│   ├── PositioningPdfCrawler.php
+>>>>>>> main
 ├── Embeddings/
 │   └── Voyage4EmbeddingGenerator.php  Voyage AI (voyage-4) embedding client
 └── Service/

@@ -159,3 +159,20 @@ font-family: 'Montserrat', sans-serif;
     color: #999;         
     font-style: italic;   
 }
+.chatbot-msg--error {
+  align-self: flex-start;
+  background: #2a1414;
+  border: 0.5px solid rgba(255, 80, 80, 0.35);
+  color: #ffb3b3;
+}
+.chatbot-msg--error-limit {
+  align-self: flex-start;
+  background: #241d0e;
+  border: 0.5px solid rgba(255, 190, 60, 0.35);
+  color: #ffd98a;
+}
+
+.chatbot-msg--error,
+.chatbot-msg--error-limit {
+  border-radius: 14px 14px 14px 4px;
+}
