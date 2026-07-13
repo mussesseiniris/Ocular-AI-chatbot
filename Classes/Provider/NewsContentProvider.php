@@ -5,16 +5,19 @@ declare(strict_types=1);
 namespace Ocular\Chatbot\Provider;
 
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
-use TYPO3\CMS\Core\Database\Query\Restriction\HiddenRestriction;
 use Doctrine\DBAL\ParameterType;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Database\Query\Restriction\FrontendGroupRestriction;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+
 
 abstract class NewsContentProvider
 {
     use HtmlToTextTrait;
 
     public function __construct(
-        private readonly ConnectionPool $connectionPool
+        private readonly ConnectionPool $connectionPool,
+        protected readonly ExtensionConfiguration $extensionConfiguration
     ) {}
 
     abstract protected function getStoragePid(): int;
@@ -29,9 +32,7 @@ abstract class NewsContentProvider
     {
 
         $qb = $this->connectionPool->getQueryBuilderForTable($this->newsTable);
-        $qb->getRestrictions()->removeAll()
-            ->add(new DeletedRestriction())
-            ->add(new HiddenRestriction());
+        $qb->getRestrictions()->add(GeneralUtility::makeInstance(FrontendGroupRestriction::class));
 
         return $qb->select('uid', 'title', 'teaser', 'bodytext', 'path_segment')
             ->from($this->newsTable)
@@ -51,12 +52,11 @@ abstract class NewsContentProvider
 
         foreach ($this->fetchNews() as $news) {
             $title = trim((string) $news['title']);
-            echo "Processing {$this->getEntityType()}: {$title}\n";
 
             $slug       = trim((string) $news['path_segment'], '/');
             $categories = $this->fetchCategory((int) $news['uid']);
 
-            // 公共 metadata —— project / article 都一样
+          
             $shared = [
                 'name'            => $title,
                 'entityType'      => $this->getEntityType(),
@@ -69,7 +69,7 @@ abstract class NewsContentProvider
                 'relatedArticles' => [],
             ];
 
-            // ↓ 会变的那一步：每条记录怎么切 chunk，交给子类
+            
             foreach ($this->buildRecordChunks($news, $shared) as $chunk) {
                 $chunks[] = $chunk;
             }
@@ -86,9 +86,6 @@ abstract class NewsContentProvider
         $catagoryTable = 'sys_category';
         $middleTable = 'sys_category_record_mm';
         $qb = $this->connectionPool->getQueryBuilderForTable($catagoryTable);
-        $qb->getRestrictions()->removeAll()
-            ->add(new DeletedRestriction())
-            ->add(new HiddenRestriction());
 
         return $qb->select('c.title')
             ->from($catagoryTable, 'c')

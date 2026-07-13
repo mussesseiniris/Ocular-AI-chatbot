@@ -77,11 +77,13 @@
     try {
       appendMessage(question, 'user');
       input.value = '';
-      const pending = appendMessage('…', 'ai');
+      const pending = appendMessage('Thinking', 'ai');
+      pending.classList.add('chatbot-msg--pending');
       let token;
       try {
       token = await getFreshToken();
       } catch (e) {
+        pending.classList.remove('chatbot-msg--pending');
         pending.textContent = 'Bot verification failed. Please refresh and try again.';
         return;
       }
@@ -99,6 +101,8 @@
 
         const data = await res.json();
         const answer = data.answer || 'Sorry, something went wrong. Please try again.';
+        pending.classList.remove('chatbot-msg--pending'); 
+        pending.innerHTML = DOMPurify.sanitize(marked.parse(answer));
 
         if (res.status === 429) {
           pending.textContent = answer;
@@ -112,6 +116,7 @@
           pending.className = 'chatbot-msg chatbot-msg--ai';
         }
       } catch (e) {
+        pending.classList.remove('chatbot-msg--pending');
         pending.textContent = 'Sorry, something went wrong. Please try again.';
         pending.className = 'chatbot-msg chatbot-msg--error';
       }
