@@ -127,4 +127,21 @@ abstract class NewsContentProvider
             ->fetchFirstColumn();
     }
 
+    private function fetchRawRecord(int $uid): ?array
+    {
+        $qb = $this->connectionPool->getQueryBuilderForTable($this->newsTable);
+        $qb->getRestrictions()->removeAll(); // caller checks hidden/deleted itself
+
+        $row = $qb->select('uid', 'pid', 'title', 'teaser', 'bodytext', 'path_segment')
+            ->from($this->newsTable)
+            ->where(
+                $qb->expr()->eq('uid', $qb->createNamedParameter($uid, \Doctrine\DBAL\ParameterType::INTEGER))
+            )
+            ->setMaxResults(1)
+            ->executeQuery()
+            ->fetchAssociative();
+
+        return $row === false ? null : $row;
+    }
+
 }
