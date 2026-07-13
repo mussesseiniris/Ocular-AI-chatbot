@@ -8,6 +8,9 @@ services:
     resource: "../Classes/*"
     exclude: "../Classes/Domain/Model/*"
 
+  Ocular\Chatbot\Hooks\ChunkSyncHook:
+    public: true
+
   Psr\Http\Client\ClientInterface:
     class: GuzzleHttp\Client
 
