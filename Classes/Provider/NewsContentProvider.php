@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Ocular\Chatbot\Provider;
 
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use Doctrine\DBAL\ParameterType;
-use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Database\Query\Restriction\FrontendGroupRestriction;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -60,7 +60,7 @@ abstract class NewsContentProvider
             $shared = [
                 'name'            => $title,
                 'entityType'      => $this->getEntityType(),
-                'entityId'        => $this->getEntityType() . '_' . preg_replace('/[^a-z0-9_]/', '_', strtolower($slug)),
+                'entityId'        => $this->getEntityType() . '_' . $news['uid'],
                 'entityName'      => $title,
                 'url'             => $this->getUrlPrefix() . $slug . '/',
                 'tags'            => $categories,
@@ -76,6 +76,31 @@ abstract class NewsContentProvider
         }
 
         return $chunks;
+    }
+
+    public function buildChunksForUid(int $uid): array
+    {
+        $news = $this->fetchRawRecord($uid);
+        if ($news === null || (int) $news['pid'] !== $this->getStoragePid()) {
+            return [];
+        }
+
+        $slug       = trim((string) $news['path_segment'], '/');
+        $categories = $this->fetchCategory($uid);
+
+        $shared = [
+            'name'            => trim((string) $news['title']),
+            'entityType'      => $this->getEntityType(),
+            'entityId'        => $this->getEntityType() . '_' . $uid,
+            'entityName'      => trim((string) $news['title']),
+            'url'             => $this->getUrlPrefix() . $slug . '/',
+            'tags'            => $categories,
+            'serviceTypes'    => [],
+            'articleTypes'    => [],
+            'relatedArticles' => [],
+        ];
+
+        return $this->buildRecordChunks($news, $shared);
     }
 
     // public function buildChunks(): array {}
@@ -97,6 +122,23 @@ abstract class NewsContentProvider
             )
             ->executeQuery()
             ->fetchFirstColumn();
+    }
+
+    private function fetchRawRecord(int $uid): ?array
+    {
+        $qb = $this->connectionPool->getQueryBuilderForTable($this->newsTable);
+        $qb->getRestrictions()->removeAll(); // caller checks hidden/deleted itself
+
+        $row = $qb->select('uid', 'pid', 'title', 'teaser', 'bodytext', 'path_segment')
+            ->from($this->newsTable)
+            ->where(
+                $qb->expr()->eq('uid', $qb->createNamedParameter($uid, \Doctrine\DBAL\ParameterType::INTEGER))
+            )
+            ->setMaxResults(1)
+            ->executeQuery()
+            ->fetchAssociative();
+
+        return $row === false ? null : $row;
     }
 
 }

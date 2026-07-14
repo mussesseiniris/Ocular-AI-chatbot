@@ -8,6 +8,9 @@ services:
     resource: "../Classes/*"
     exclude: "../Classes/Domain/Model/*"
 
+  Ocular\Chatbot\Hooks\ChunkSyncHook:
+    public: true
+
   Psr\Http\Client\ClientInterface:
     class: GuzzleHttp\Client
 
@@ -65,6 +68,8 @@ services:
       $modelOptions:
         temperature: 0
         max_completion_tokens: 1536
+        reasoning_effort: none
+        reasoning_format: hidden
         # reasoning_effort: default
         # reasoning_format: hidden
         chat_template_kwargs:

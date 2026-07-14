@@ -60,9 +60,9 @@ class ChatService
             ->query($searchRequest);
 
         return $response->__toArray()['result']['points'];
-    }
+    } 
 
-    public function ask(string $question, array $history): string
+    public function ask(string $question, array $history): ChatResult
     {
         try {
 
@@ -70,7 +70,7 @@ class ChatService
                 $this->logger->debug('[ChatService] Question rejected: too long', [
                     'length' => mb_strlen($question),
                 ]);
-                return "That question is a bit long — could you shorten it and try again?";
+                return ChatResult::success("That question is a bit long — could you shorten it and try again?");
             }
             //step 1: Get relevant chunks from vetor databasde(Qdrant)
             $results = $this->search($question);
@@ -136,11 +136,10 @@ class ChatService
 
             //step 4: Send to LLM and return the answer
             $answer = $this->chat->generateChat($messages);
-            return $answer;
+            return ChatResult::success($answer);
         } catch (\Throwable $e) {
             $this->logger->error('[ChatService] ' . $e->getMessage(), ['exception' => $e]);
-            return "Sorry, something went wrong while processing your question. Please try again shortly.";
-
+            return ChatResult::failure('Sorry, something went wrong while processing your question. Please try again shortly.');            
         }
     }
 

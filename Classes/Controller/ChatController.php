@@ -45,7 +45,7 @@ class ChatController extends ActionController
                 $this->logger->error('[Turnstile] TURNSTILE_SECRET_KEY is not set — blocking all requests');
                 return $this->jsonResponse(json_encode([
                     'answer' => "Service configuration error. Please contact us at {$resultsEmail}."
-                ]));
+                ]))->withStatus(503);
             }
 
             $token = $this->request->hasArgument('turnstileToken')
@@ -76,13 +76,18 @@ class ChatController extends ActionController
             $feuser = $this->request->getAttribute('frontend.user');
             $history = ($feuser !== null) ? ($feuser->getSessionData('chatbot_history') ?? []) : [];
             $result = $this->chatService->ask($question, $history);
+            if (!$result->ok) {
+                // Failure: report the error status, and isn't addced into
+                // session history to bloat LLM context.
+                return $this->jsonResponse(json_encode(['answer' => $result->message]))->withStatus(500);
+            }
             $history[] = ['role' => 'user', 'content' => $question];
-            $history[] = ['role' => 'assistant', 'content' => $result];
+            $history[] = ['role' => 'assistant', 'content' => $result->message];
             $history = array_slice($history, -self::MAX_TURNS_KEPT);
             if ($feuser !== null) {
                 $feuser->setAndSaveSessionData('chatbot_history', $history);
             }
-            return $this->jsonResponse(json_encode(['answer' => $result]));
+            return $this->jsonResponse(json_encode(['answer' => $result->message]));
         } catch (\Throwable $e) {
             $this->logger->error('[ChatController] ERROR: ' . $e->getMessage(),  [
                 'exception' => $e,

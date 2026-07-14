@@ -13,6 +13,8 @@ use Qdrant\Config;
 use Qdrant\Models\PointsStruct;
 use Qdrant\Models\PointStruct;
 use Qdrant\Models\VectorStruct;
+use Qdrant\Models\Filter\Filter;
+use Qdrant\Models\Filter\Condition\MatchString;
 
 class QdrantIngester extends QdrantVectorStore
 {
@@ -90,5 +92,27 @@ class QdrantIngester extends QdrantVectorStore
     public function ensureCollectionExists(int $embeddingLength): void
     {
         $this->createCollectionIfDoesNotExist($this->collectionName, $embeddingLength);
+    }
+
+    public function deleteByEntityId(string $entityId): void  
+    {
+        $filter = new Filter();
+        $filter->addMust(new MatchString('entity_id', $entityId));
+
+        $response = $this->client
+            ->collections($this->collectionName)
+            ->points()
+            ->deleteByFilter($filter);
+    }
+
+    public function deleteByEntityType(string $entityType): void
+    {
+        $filter = new Filter();
+        $filter->addMust(new MatchString('entity_type', $entityType));
+
+        $this->client
+            ->collections($this->collectionName)
+            ->points()
+            ->deleteByFilter($filter);
     }
 }
