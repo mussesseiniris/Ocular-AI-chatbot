@@ -8,52 +8,76 @@ use Smalot\PdfParser\Parser;
 
 class PositioningPdfCrawler
 {
+    /**
+     * Pages of interest and their chunk metadata, keyed by page index.
+     * Single source of truth: getPdfText() and buildChunks() both read this,
+     * so a layout change in the PDF only needs updating here.
+     */
+    private const PAGES = [
+        3 => ['chunkType' => 'company_introduction', 'entityType' => 'agency',   'tags' => ['Company_introduction', 'ocular_introduction']],
+        4 => ['chunkType' => 'Brand',                'entityType' => 'agency',   'tags' => ['Brand', 'Positioning']],
+        6 => ['chunkType' => 'service',              'entityType' => 'services', 'tags' => ['service', 'services']],
+    ];
 
     private string $pdfPath;
+
     public function __construct()
     {
-
         $this->pdfPath = __DIR__ . '/../../Resources/Private/Pdfs/Positioning-and-tone-of-voice.pdf';
     }
 
+    /**
+     * Returns the text of each page listed in PAGES, keyed by page index so
+     * callers can match texts back to their metadata. Fails loudly when a page
+     * is missing or nearly empty — that means the PDF layout has changed and
+     * PAGES needs updating, which must not go unnoticed.
+     */
     public function getPdfText(): array
     {
         $parser = new Parser();
         $pdf = $parser->parseFile($this->pdfPath);
         $pages = $pdf->getPages();
+
         $paragraphs = [];
-        foreach ([3, 4, 6] as $pageIndex) {
-            $text = $pages[$pageIndex]->getText();
-            if (strlen(trim($text)) > 50) {
-                $paragraphs[] = $text;
+        foreach (array_keys(self::PAGES) as $pageIndex) {
+            if (!isset($pages[$pageIndex])) {
+                throw new \RuntimeException(
+                    "Positioning PDF has no page index {$pageIndex} — layout changed? Update PAGES in " . self::class
+                );
             }
+            $text = trim($pages[$pageIndex]->getText());
+            if (strlen($text) <= 50) {
+                throw new \RuntimeException(
+                    "Positioning PDF page {$pageIndex} yielded almost no text — the document layout has probably changed."
+                );
+            }
+            $paragraphs[$pageIndex] = $text;
         }
         return $paragraphs;
     }
 
     public function buildChunks(): array
     {
-        $contents = [];
-        $pageTags=[3=>['Company_introduction','ocular_introduction'],4=>['Brand','Positioning'],6=>['service','services']];
-        $pageEntityTypes = [3=>'agency',4=>'agency',6=>'services'];
-        $pageChunkTypes = [3=>'company_introduction',4=>'Brand',6=>'service'];
-        $paragraphs = $this->getPdfText();
-        foreach ([3,4,6] as $index=>$pageIndex) {
-            $contents[] = [
-                'content' => $paragraphs[$index],
+        $chunks = [];
+        foreach ($this->getPdfText() as $pageIndex => $text) {
+            $meta = self::PAGES[$pageIndex];
+            $chunks[] = [
+                'content' => $text,
                 'metadata' => [
-                    'chunk_type' => $pageChunkTypes[$pageIndex],
-                    'url' => '',
-                    'tags' => $pageTags[$pageIndex],
-                    'serviceTypes' => [],
-                    'entityType'   => $pageEntityTypes[$pageIndex],
-                    'entityId'     => $pageChunkTypes[$pageIndex] . '_' . $pageEntityTypes[$pageIndex],
-                    'entityName'   => $pageChunkTypes[$pageIndex],
-                    'articleTypes' => [],
+                    'chunk_type'      => $meta['chunkType'],
+                    'url'             => '',
+                    'tags'            => $meta['tags'],
+                    'serviceTypes'    => [],
+                    'entityType'      => $meta['entityType'],
+                    // Page-based ID keeps chunk IDs unique and readable
+                    // (chunk_positioning_pdf_page_3_... instead of chunk__...).
+                    'entityId'        => 'positioning_pdf_page_' . $pageIndex,
+                    'entityName'      => 'Positioning and Tone of Voice (PDF)',
+                    'articleTypes'    => [],
                     'relatedArticles' => [],
                 ],
             ];
         }
-        return $contents;
+        return $chunks;
     }
 }

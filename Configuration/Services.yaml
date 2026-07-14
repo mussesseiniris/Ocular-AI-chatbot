@@ -66,7 +66,7 @@ services:
       $url: "%env(LLM_API_URL)%"
       $model: "%env(LLM_MODEL)%"
       $modelOptions:
-        # temperature: 0.0
+        temperature: 0
         max_completion_tokens: 1536
         reasoning_effort: none
         reasoning_format: hidden

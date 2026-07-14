@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Ocular\Chatbot\Provider;
 
 use Doctrine\DBAL\ParameterType;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
-use TYPO3\CMS\Core\Database\Query\Restriction\HiddenRestriction;
+use TYPO3\CMS\Core\Database\Query\Restriction\FrontendGroupRestriction;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * Builds chatbot chunks for the About Us page straight from the database.
@@ -28,10 +29,14 @@ use TYPO3\CMS\Core\Database\Query\Restriction\HiddenRestriction;
 class AboutUsProvider
 {
     use HtmlToTextTrait;
-
-    private const STORAGE_PID = 2;
-
+    private int $STORAGE_PID;
     private string $contentTable = 'tt_content';
+    public function __construct(
+        private readonly ConnectionPool $connectionPool,
+        ExtensionConfiguration $extensionConfiguration
+    ) {
+        $this->STORAGE_PID = (int)$extensionConfiguration->get('chatbot', 'aboutUsPid');
+    }
 
     /**
      * Maps department headings to the serviceTypes vocabulary used in projects.
@@ -51,10 +56,6 @@ class AboutUsProvider
         'Online'                  => ['Web Development', 'Platform Architecture', 'CRM'],
         'Creative and Video'      => ['Video', 'Graphic Design', 'Brand', 'UX Design'],
     ];
-
-    public function __construct(
-        private readonly ConnectionPool $connectionPool
-    ) {}
 
     /**
      * @return array List of chunks with 'content' and 'metadata'
@@ -87,7 +88,6 @@ class AboutUsProvider
 
         // One chunk per person — answers "Who does UX at Ocular?" / "Who is the director?"
         foreach ($members as $member) {
-            echo "Processing team member: {$member['name']}\n";
 
             $content = "{$member['name']} is {$member['role']} at OCULAR, working in the {$member['department']} team.";
 
@@ -156,7 +156,7 @@ class AboutUsProvider
         $rows = $qb->select('bodytext', 'tx_container_parent')
             ->from($this->contentTable)
             ->where(
-                $qb->expr()->eq('pid', $qb->createNamedParameter(self::STORAGE_PID, ParameterType::INTEGER)),
+                $qb->expr()->eq('pid', $qb->createNamedParameter($this->STORAGE_PID, ParameterType::INTEGER)),
                 $qb->expr()->eq('CType', $qb->createNamedParameter('text')),
                 $qb->expr()->neq('bodytext', $qb->createNamedParameter(''))
             )
@@ -268,7 +268,7 @@ class AboutUsProvider
         $rows = $qb->select('uid', 'header', 'sorting', 'tx_container_parent')
             ->from($this->contentTable)
             ->where(
-                $qb->expr()->eq('pid', $qb->createNamedParameter(self::STORAGE_PID, ParameterType::INTEGER)),
+                $qb->expr()->eq('pid', $qb->createNamedParameter($this->STORAGE_PID, ParameterType::INTEGER)),
                 $qb->expr()->eq('CType', $qb->createNamedParameter('header')),
                 $qb->expr()->in(
                     'header',
@@ -295,7 +295,7 @@ class AboutUsProvider
         return $qb->select('uid', 'sorting')
             ->from($this->contentTable)
             ->where(
-                $qb->expr()->eq('pid', $qb->createNamedParameter(self::STORAGE_PID, ParameterType::INTEGER)),
+                $qb->expr()->eq('pid', $qb->createNamedParameter($this->STORAGE_PID, ParameterType::INTEGER)),
                 $qb->expr()->eq('CType', $qb->createNamedParameter('flex-container')),
                 $qb->expr()->eq('tx_container_parent', $qb->createNamedParameter($teamContainerUid, ParameterType::INTEGER))
             )
@@ -317,7 +317,7 @@ class AboutUsProvider
         return $qb->select('uid', 'bodytext')
             ->from($this->contentTable)
             ->where(
-                $qb->expr()->eq('pid', $qb->createNamedParameter(self::STORAGE_PID, ParameterType::INTEGER)),
+                $qb->expr()->eq('pid', $qb->createNamedParameter($this->STORAGE_PID, ParameterType::INTEGER)),
                 $qb->expr()->eq('CType', $qb->createNamedParameter('textpic')),
                 $qb->expr()->eq('tx_container_parent', $qb->createNamedParameter($flexContainerUid, ParameterType::INTEGER))
             )
@@ -394,10 +394,7 @@ class AboutUsProvider
     private function createRestrictedQueryBuilder()
     {
         $qb = $this->connectionPool->getQueryBuilderForTable($this->contentTable);
-        $qb->getRestrictions()->removeAll()
-            ->add(new DeletedRestriction())
-            ->add(new HiddenRestriction());
-
+        $qb->getRestrictions()->add(GeneralUtility::makeInstance(FrontendGroupRestriction::class));
         return $qb;
     }
 }

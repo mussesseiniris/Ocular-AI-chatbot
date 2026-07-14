@@ -6,8 +6,9 @@ namespace Ocular\Chatbot\Provider;
 
 use Doctrine\DBAL\ParameterType;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
-use TYPO3\CMS\Core\Database\Query\Restriction\HiddenRestriction;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Database\Query\Restriction\FrontendGroupRestriction;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * Builds chatbot chunks for the Services page straight from the database.
@@ -22,9 +23,17 @@ class ServiceProvider
 {
     use HtmlToTextTrait;
 
-    private const STORAGE_PID = 6;
+    private int $STORAGE_PID;
 
     private string $contentTable = 'tt_content';
+    
+    public function __construct(
+        private readonly ConnectionPool $connectionPool,
+        ExtensionConfiguration $extensionConfiguration
+    ) {
+        $this->STORAGE_PID = (int)$extensionConfiguration->get('chatbot', 'servicePid');
+    }
+
 
     /**
      * Maps the 3 visible services to the 3 categories used on the projects list page.
@@ -76,10 +85,6 @@ class ServiceProvider
         'Content & Communication' => 'article_process_video',
     ];
 
-    public function __construct(
-        private readonly ConnectionPool $connectionPool
-    ) {}
-
     /**
      * @return array List of chunks with 'content' and 'metadata'
      */
@@ -89,7 +94,6 @@ class ServiceProvider
 
         foreach ($this->fetchServices() as $service) {
             $name = $service['name'];
-            echo "Processing service: {$name}\n";
 
             $description = $this->htmlToText($this->stripCtaButtons((string) $service['description']));
             if ($description === '') {
@@ -168,7 +172,7 @@ class ServiceProvider
         $row = $qb->select('uid', 'tx_container_parent')
             ->from($this->contentTable)
             ->where(
-                $qb->expr()->eq('pid', $qb->createNamedParameter(self::STORAGE_PID, ParameterType::INTEGER)),
+                $qb->expr()->eq('pid', $qb->createNamedParameter($this->STORAGE_PID, ParameterType::INTEGER)),
                 $qb->expr()->eq('CType', $qb->createNamedParameter('text')),
                 $qb->expr()->eq('header', $qb->createNamedParameter($serviceName))
             )
@@ -226,10 +230,7 @@ class ServiceProvider
     private function createRestrictedQueryBuilder()
     {
         $qb = $this->connectionPool->getQueryBuilderForTable($this->contentTable);
-        $qb->getRestrictions()->removeAll()
-            ->add(new DeletedRestriction())
-            ->add(new HiddenRestriction());
-
+        $qb->getRestrictions()->add(GeneralUtility::makeInstance(FrontendGroupRestriction::class));
         return $qb;
     }
 }

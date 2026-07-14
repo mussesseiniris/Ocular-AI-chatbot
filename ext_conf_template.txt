@@ -1,0 +1,11 @@
+# cat=basic/enable; type=string; label=About Us page storage PID
+aboutUsPid = 2
+
+# cat=basic/enable; type=string; label=Services page storage PID
+servicePid = 6
+
+# cat=basic/enable; type=string; label=Projects page storage PID
+projectPid = 12
+
+# cat=basic/enable; type=string; label=Articles page storage PID
+articlePid = 19

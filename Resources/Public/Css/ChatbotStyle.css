@@ -143,6 +143,22 @@ font-family: 'Montserrat', sans-serif;
   .chatbot-fab { right: 16px; bottom: 16px; }
 }
 
+.chatbot-msg--pending::after {
+    content: '';
+    animation: chatbot-dots 1.2s steps(4, end) infinite;
+}
+@keyframes chatbot-dots {
+    0%  { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+}
+
+.chatbot-msg.chatbot-msg--pending {
+    font-size: 12px;      
+    color: #999;         
+    font-style: italic;   
+}
 .chatbot-msg--error {
   align-self: flex-start;
   background: #2a1414;
