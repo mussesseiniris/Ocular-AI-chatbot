@@ -305,9 +305,10 @@ class AboutUsProvider
     }
 
     /**
-     * Returns the bodytext of every textpic element directly inside a flex-container.
+     * Returns the uid and bodytext of every textpic element directly inside a
+     * flex-container.
      *
-     * @return array<int, string>
+     * @return array<int, array{uid: int, bodytext: string}>
      */
     private function fetchTextpicChildren(int $flexContainerUid): array
     {

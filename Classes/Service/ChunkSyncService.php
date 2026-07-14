@@ -34,6 +34,8 @@ class ChunkSyncService
     // Entry points called by ChunkSyncHook
     public function resync(string $table, int $uid): void
     {
+        // TEMP: remove after sync testing
+        $this->logger->debug('[ChunkSyncService] resync called', ['table' => $table, 'uid' => $uid]);
         try {
             match ($table) {
                 'tx_news_domain_model_news' => $this->resyncNews($uid),
