@@ -1,5 +1,5 @@
 {
-    "name": "ocular/chatbot",
+    "name": "ocular-nz/chatbot",
     "description": "AI RAG chatbot extension for Ocular website",
     "type": "typo3-cms-extension",
     "license": [
