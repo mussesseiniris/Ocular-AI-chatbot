@@ -67,32 +67,13 @@ class ChatService
         try {
 
             if (mb_strlen($question) > 300) {
-                $this->logger->debug('[ChatService] Question rejected: too long', [
+                 $this->logger->debug('[ChatService] Question rejected: too long', [
                     'length' => mb_strlen($question),
                 ]);
                 return ChatResult::success("That question is a bit long — could you shorten it and try again?");
             }
             //step 1: Get relevant chunks from vetor databasde(Qdrant)
             $results = $this->search($question);
-
-            $this->logger->debug('[ChatService] Search results', [
-                'query'       => $question,
-                'result_count' => count($results),
-                'top_score'     => $results[0]['score'] ?? null,
-            ]);
-
-            // foreach ($results as $i => $doc) {
-            //     $payload = $doc['payload'];
-            //     $this->logger->debug(sprintf(
-            //         '[ChatService] Chunk %d: score=%.4f | type=%s | name=%s | tags=%s | preview=%s',
-            //         $i + 1,
-            //         $doc['score'] ?? 0,
-            //         $payload['entity_type'] ?? '',
-            //         $payload['entity_name'] ?? '',
-            //         implode(', ', $payload['tags'] ?? []),
-            //         mb_substr($payload['content'] ?? '', 0, 200)
-            //     ));
-            // }
 
             //step 2: Build knowledge base from chunks (per-chunk, each with its own URL)
             $chunksBlock = '';
