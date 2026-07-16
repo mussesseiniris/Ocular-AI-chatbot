@@ -21,12 +21,12 @@ class TurnstileService
 
     public function isConfigured(): bool
     {
-        return !empty(getenv('TURNSTILE_SECRET_KEY'));
+        return !empty($_ENV['TURNSTILE_SECRET_KEY']);
     }
 
     public function verify(string $token, string $ip): bool 
     {
-        $secretKey = getenv('TURNSTILE_SECRET_KEY');
+        $secretKey = $_ENV['TURNSTILE_SECRET_KEY'];
 
         if (empty($token)) {
             $this->logger->debug('[Turnstile] Empty token — verification failed');

@@ -10,7 +10,7 @@ use Psr\Log\LoggerInterface;
 class RateLimitService
 {
     // Maximum questions allowed per 24 hour window
-    private const LIMIT = 10;
+    private const LIMIT = 100;
     
     // 24 hours in seconds
     private const WINDOW = 86400;
