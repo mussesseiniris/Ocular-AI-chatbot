@@ -4,14 +4,18 @@ TYPO3 v13 extension that adds a RAG (Retrieval-Augmented Generation) AI chatbot 
 
 ## How it works
 
-1. **Ingest** (`chatbot:ingest` CLI command) — reads content from TYPO3 database records (and one PDF), splits it into chunks, generates embeddings via **Voyage AI**, and stores them in **Qdrant**.
-2. **Ask** — a visitor submits a question through the frontend widget. The backend:
-   - Verifies the request with **Cloudflare Turnstile**.
+1. **Ingest** (`chatbot:ingest` CLI command) — reads content from TYPO3 database records (and one PDF), splits it into chunks, generates embeddings via Voyage AI, and stores them in Qdrant.
+2. **Auto-sync** — a `DataHandler` hook (`ChunkSyncHook` and `ChunkSyncService`) keeps Qdrant up to date as editors work in the backend, without needing a manual re-ingest:
+   - Saving, hiding, or deleting a News record (project/article) re-embeds just that record.
+   - Saving or deleting a content element on the About Us or Services page rebuilds that whole section (several small content elements combine into shared chunks, so a full section rebuild is simpler and safer than replacing individual rows).
+   - Services is the fragile one: `ServiceProvider` matches content elements by a hardcoded list of exact service header names and by container position (gradient-container & sibling text element), not by a stable ID. Renaming a service header, restructuring its container, or adding a service outside that list can produce a missing or stale chunk. Treat Services as the section worth spot-checking after backend changes — re-run `chatbot:ingest --reset` if in doubt.
+3. **Ask** — a visitor submits a question through the frontend widget. The backend:
+   - Verifies the request with Cloudflare Turnstil*.
    - Checks a per-IP daily rate limit.
    - Embeds the question and searches Qdrant for the most relevant chunks.
-   - Builds a prompt (system prompt + retrieved chunks + recent conversation history) and sends it to an OpenAI-compatible LLM via **LLPhant**.
+   - Builds a prompt (system prompt + retrieved chunks + recent conversation history) and sends it to an OpenAI-compatible LLM via LLPhant.
    - Returns the answer as JSON and stores the turn in the frontend user's session.
-3. **History** — a separate endpoint returns the stored cogotnversation history for the current session.
+4. **History** — a separate endpoint returns the stored conversation history for the current session.
 
 ## Architecture
 
@@ -29,16 +33,12 @@ Classes/
 │   ├── ServiceProvider.php
 │   ├── NewsContentProvider.php
 │   └── HtmlToTextTrait.php
-<<<<<<< HEAD
-├── Crawler/                         PDF source (no DB equivalent)
-│   └── PositioningPdfCrawler.php
-=======
 ├── Crawler/                         Legacy/PDF sources (no DB equivalent)
 │   ├── PositioningPdfCrawler.php
->>>>>>> main
 ├── Embeddings/
 │   └── Voyage4EmbeddingGenerator.php  Voyage AI (voyage-4) embedding client
 └── Service/
+    ├── ChatResult.php              Wrapper of chat result with success or failure flag
     ├── ChatService.php              Search + prompt building + LLM call
     ├── QdrantIngester.php           Writes embedded chunks into Qdrant
     ├── RateLimitService.php         Per-IP daily question limit (DB-backed)
@@ -68,13 +68,26 @@ Set the following environment variables (e.g. in `.env`):
 | `QDRANT_HOST` | Qdrant host |
 | `QDRANT_PORT` | Qdrant port |
 | `QDRANT_COLLECTION` | Qdrant collection name (chunks are stored under the `openai` named vector) |
-| `RATE_LIMIT_SECRET` | Secret used to hash IPs before storing them for rate limiting |
+| `RATE_LIMIT_SECRET` | Secret used to hash IPs before storing them for rate limiting. Secret also used to hash IPs for storing conversation in logging table|
 | `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret key; requests are blocked if unset |
 | `SITE_BASE_URL` | Public base URL of the site (e.g. `https://ocular.nz`), prepended to source links in answers |
 
-The Turnstile **site key** is configured via TypoScript constant `plugin.tx_chatbot_chatbot.turnstile.siteKey`.
+The Turnstile site key is configured via TypoScript constant `plugin.tx_chatbot_chatbot.turnstile.siteKey`.
 
-### Extension configuration
+The contact and support email chatbot refers to the user is configured via the TypoScript constant `plugin.tx_chatbot_chatbot.contact.resultEmail` and `plugin.tx_chatbot_chatbot.contact.supportEmail`
+
+## Installation
+
+`ocular-nz/chatbot` is already declared in this project's root `composer.json` (as `dev-main`, pulled from the `mussesseiniris/Ocular-AI-chatbot` VCS repository listed under `repositories`). That means within this repo you don't need to add or require anything:
+
+1. Run `composer update ocular-nz/chatbot` to pull the latest commit from `dev-main` (or `composer install` on a fresh checkout). Confirm it shows as active under Admin Tools > Extensions if in doubt. It also runs the database schema update so the `tx_chatbot_rate_limit` and `tx_chatbot_logging` tables are created automatically at this step — no manual Database Compare needed. Only fall back to running it manually (Admin Tools > Maintenance > Analyze Database Structure, or `vendor/bin/typo3 database:updateschema`) if a deploy pipeline installs with `--no-scripts` and skips the hook.
+2. Set the environment variables listed above.
+3. Check the storage page IDs in the extension configuration (see below).
+4. Run ingest command `chatbot:ingest` to ingest content into qdrant 
+
+To use this extension in a different project instead, add the git repository under `repositories` in that project's `composer.json` and run `composer require ocular-nz/chatbot:dev-main` first.
+
+### Storage Page IDs configuration
 
 The storage page IDs the content providers read from are set in **Admin Tools > Settings > Extension Configuration > chatbot**:
 
@@ -87,14 +100,6 @@ The storage page IDs the content providers read from are set in **Admin Tools > 
 
 On a fresh install, verify these match the actual page tree — a wrong PID makes the corresponding source silently produce zero chunks.
 
-## Installation
-
-1. Require the extension via Composer and activate it in the TYPO3 backend.
-2. Run the database compare (Admin Tools > Maintenance) to create the `tx_chatbot_rate_limit` table.
-3. Set the environment variables listed above.
-4. Check the storage page IDs in the extension configuration (see above).
-5. Add the `Chatbot` and `History` plugins to a page, or rely on the `chatbotAjax` / `chatbotHistory` page types wired up in TypoScript for the JS widget.
-
 ## Usage
 
 ### Ingest content into Qdrant
@@ -102,14 +107,9 @@ On a fresh install, verify these match the actual page tree — a wrong PID make
 ```
 vendor/bin/typo3 chatbot:ingest
 ```
+Note - Connects to the already-running Qdrant container (started via docker-compose.yaml). By default, creates the collection only if it doesn't exist yet, then adds/updates chunks (existing chunks aren't removed — stale ones can linger). Use --reset to wipe the collection and rebuild it from scratch.
 
-Options:
-- `--source|-s` — comma-separated list of sources to run: `projects`, `about-us`, `articles`, `services`, `positioning`, or `all` (default).
-- `--reset|-r` — deletes and recreates the Qdrant collection before ingesting (wipes existing vectors).
-
-> **Note — stale vectors:** ingestion is upsert-only. Deleting a record in the CMS, or changing its slug (which changes the chunk ID), leaves the old vector in Qdrant and the chatbot will keep answering from it. Run `chatbot:ingest --reset` after deleting or renaming content, and consider scheduling a periodic full re-ingest.
-
-### Clean up expired rate-limit records
+### Rate-limit records
 
 ```
 vendor/bin/typo3 chatbot:cleanup-ratelimit
@@ -123,8 +123,8 @@ Deletes rate-limit rows older than 24 hours; intended to run on a schedule (alre
 - `chatbotHistory` (typeNum `1590`) → `ChatController::historyAction` — returns `{ "history": [...] }` for the current frontend session.
 
 ## Notes
-
+- No manual step is needed to put the widget on a page. `setup.typoscript` already injects the floating chat widget (CSS, JS, and the `ChatWidget.html` partial) into the footer of every page, and the `chatbotAjax` / `chatbotHistory` typeNums work on any page ID. 
 - The system prompt is loaded from `Resources/Private/Prompts/SystemPrompt.md` at request time.
 - Conversation history is capped at the last 6 messages (3 question-answer exchanges) and stored in the frontend user's session.
-- Questions are limited to 300 characters server-side.
+- Questions are limited to 300 characters server-side. 
 - This extension is at an early (`alpha`) stage.
