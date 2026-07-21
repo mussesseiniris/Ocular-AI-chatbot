@@ -10,7 +10,7 @@ use Psr\Log\LoggerInterface;
 class RateLimitService
 {
     // Maximum questions allowed per 24 hour window
-    private const LIMIT = 10;
+    private const LIMIT = 100;
     
     // 24 hours in seconds
     private const WINDOW = 86400;
@@ -39,7 +39,7 @@ class RateLimitService
      */
     public function isAllowed(string $ip): bool
     {
-        $ipHash = hash_hmac('sha256', $ip, $this->secret);
+        $ipHash = $this->hashIp($ip);
         $now = time();
 
         $connection = $this->connectionPool->getConnectionForTable('tx_chatbot_rate_limit');
@@ -78,5 +78,10 @@ class RateLimitService
 
         return ($record['question_count'] ?? 0) <= self::LIMIT;
     }
+
+    public function hashIp(string $ip): string
+{
+    return hash_hmac('sha256', $ip, $this->secret);
+}
     
 }

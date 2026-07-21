@@ -117,7 +117,8 @@ class ChatService
 
             //step 4: Send to LLM and return the answer
             $answer = $this->chat->generateChat($messages);
-            return ChatResult::success($answer);
+            $topTopic = $results[0]['payload']['entity_type'] ?? '';
+            return ChatResult::success($answer, count($results), $topTopic);
         } catch (\Throwable $e) {
             $this->logger->error('[ChatService] ' . $e->getMessage(), ['exception' => $e]);
             return ChatResult::failure('Sorry, something went wrong while processing your question. Please try again shortly.');            
