@@ -80,7 +80,7 @@ The contact and support email chatbot refers to the user is configured via the T
 
 `ocular-nz/chatbot` is already declared in this project's root `composer.json` (as `dev-main`, pulled from the `mussesseiniris/Ocular-AI-chatbot` VCS repository listed under `repositories`). That means within this repo you don't need to add or require anything:
 
-1. Run `composer update ocular-nz/chatbot` to pull the latest commit from `dev-main` (or `composer install` on a fresh checkout). Confirm it shows as active under Admin Tools > Extensions if in doubt. It also runs the database schema update so the `tx_chatbot_rate_limit` and `tx_chatbot_logging` tables are created automatically at this step — no manual Database Compare needed. Only fall back to running it manually (Admin Tools > Maintenance > Analyze Database Structure, or `vendor/bin/typo3 database:updateschema`) if a deploy pipeline installs with `--no-scripts` and skips the hook.
+1. Run `composer update ocular-nz/chatbot` to pull the latest commit from `dev-main` (or `composer install` on a fresh checkout). Confirm it shows as active under Admin Tools > Extensions if in doubt. It also runs the database schema update so the `tx_chatbot_rate_limit` and `tx_chatbot_interaction_log` tables are created automatically at this step — no manual Database Compare needed. Only fall back to running it manually (Admin Tools > Maintenance > Analyze Database Structure, or `vendor/bin/typo3 database:updateschema`) if a deploy pipeline installs with `--no-scripts` and skips the hook.
 2. Set the environment variables listed above.
 3. Check the storage page IDs in the extension configuration (see below).
 4. Run ingest command `chatbot:ingest` to ingest content into qdrant 
@@ -105,17 +105,24 @@ On a fresh install, verify these match the actual page tree — a wrong PID make
 ### Ingest content into Qdrant
 
 ```
-vendor/bin/typo3 chatbot:ingest
+chatbot:ingest
 ```
 Note - Connects to the already-running Qdrant container (started via docker-compose.yaml). By default, creates the collection only if it doesn't exist yet, then adds/updates chunks (existing chunks aren't removed — stale ones can linger). Use --reset to wipe the collection and rebuild it from scratch.
 
 ### Rate-limit records
 
 ```
-vendor/bin/typo3 chatbot:cleanup-ratelimit
+chatbot:cleanup-ratelimit
 ```
 
 Deletes rate-limit rows older than 24 hours; intended to run on a schedule (already tagged `schedulable`).
+
+## Interaction log records
+
+```
+chatbot:cleanup-interactionlog
+```
+Deletes interaction log records older than the retention window (e.g. 90 days); intended to run on a schedule (already tagged `schedulable`).
 
 ## Frontend endpoints
 
