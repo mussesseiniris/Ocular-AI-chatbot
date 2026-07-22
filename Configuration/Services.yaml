@@ -74,7 +74,7 @@ services:
       $model: "%env(LLM_MODEL)%"
       $modelOptions:
         temperature: 0
-        max_completion_tokens: 1536
+        max_completion_tokens: 500
         reasoning_effort: none
         reasoning_format: hidden
         # reasoning_effort: default
