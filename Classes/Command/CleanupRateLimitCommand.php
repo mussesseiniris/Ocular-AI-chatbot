@@ -8,15 +8,18 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 
 class CleanupRateLimitCommand extends Command
 {
     private ConnectionPool $connectionPool;
+    private ExtensionConfiguration $extensionConfiguration;
 
-    public function __construct(ConnectionPool $connectionPool)
+    public function __construct(ConnectionPool $connectionPool,ExtensionConfiguration $extensionConfiguration)
     {
         parent::__construct();
         $this->connectionPool = $connectionPool;
+        $this->extensionConfiguration = $extensionConfiguration;
     }
 
     protected function configure(): void
@@ -26,7 +29,8 @@ class CleanupRateLimitCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $cutoff = time() - 86400; // 24 hours ago
+        $retentionHours = (int) $this->extensionConfiguration->get('chatbot', 'rateLimitRetentionHours');
+        $cutoff = time() - ($retentionHours * 3600);
 
         $connection = $this->connectionPool
             ->getConnectionForTable('tx_chatbot_rate_limit');
