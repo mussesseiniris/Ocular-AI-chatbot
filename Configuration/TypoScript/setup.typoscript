@@ -51,13 +51,6 @@ chatbotHistory {
     }
 }
 
-page.includeCSS.ocularChatbot = EXT:chatbot/Resources/Public/Css/ChatbotStyle.css
-page.includeJSFooter.ocularMarked = EXT:chatbot/Resources/Public/JavaScript/marked.umd.js
-  page.includeJSFooter.ocularMarked.defer = 1
-page.includeJSFooter.ocularPurify = EXT:chatbot/Resources/Public/JavaScript/purify.min.js
-  page.includeJSFooter.ocularPurify .defer = 1
-page.includeJSFooter.ocularChatbot = EXT:chatbot/Resources/Public/JavaScript/Chatbot.js
-page.includeJSFooter.ocularChatbot.defer = 1
 
 page.footerData.10 = FLUIDTEMPLATE
 page.footerData.10 {
