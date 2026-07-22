@@ -1,3 +1,4 @@
+<f:if condition="{chatbotEnabled}">
 <div id="ocular-chatbot" class="ocular-chatbot">
   <div id="chatbot-panel" class="chatbot-panel"  role="dialog" aria-modal="true" aria-label="OCULAR Assistant" hidden>
     <div class="chatbot-topbar"></div>
@@ -38,3 +39,8 @@
   </button>
 
 </div>
+  <script src="{f:uri.resource(path: 'JavaScript/marked.umd.js', extensionName: 'Chatbot')}" defer="defer"></script>
+  <script src="{f:uri.resource(path: 'JavaScript/purify.min.js', extensionName: 'Chatbot')}" defer="defer"></script>
+  <script src="{f:uri.resource(path: 'JavaScript/Chatbot.js', extensionName: 'Chatbot')}" defer="defer"></script>
+
+</f:if>

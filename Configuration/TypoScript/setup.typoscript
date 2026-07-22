@@ -51,17 +51,13 @@ chatbotHistory {
     }
 }
 
-page.includeCSS.ocularChatbot = EXT:chatbot/Resources/Public/Css/ChatbotStyle.css
-page.includeJSFooter.ocularMarked = EXT:chatbot/Resources/Public/JavaScript/marked.umd.js
-  page.includeJSFooter.ocularMarked.defer = 1
-page.includeJSFooter.ocularPurify = EXT:chatbot/Resources/Public/JavaScript/purify.min.js
-  page.includeJSFooter.ocularPurify .defer = 1
-page.includeJSFooter.ocularChatbot = EXT:chatbot/Resources/Public/JavaScript/Chatbot.js
-page.includeJSFooter.ocularChatbot.defer = 1
 
 page.footerData.10 = FLUIDTEMPLATE
 page.footerData.10 {
     file = EXT:chatbot/Resources/Private/Templates/ChatWidget.html
+      dataProcessing {
+        10 = Ocular\Chatbot\DataProcessing\ChatbotEnabledProcessor
+    }
     variables {
         turnstileSiteKey = TEXT
         turnstileSiteKey.value = {$plugin.tx_chatbot_chatbot.turnstile.siteKey}

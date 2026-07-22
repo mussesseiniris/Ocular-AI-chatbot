@@ -6,24 +6,27 @@ namespace Ocular\Chatbot\Service;
 
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use Psr\Log\LoggerInterface;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 
 class RateLimitService
 {
-    // Maximum questions allowed per 24 hour window
-    private const LIMIT = 100;
-    
     // 24 hours in seconds
     private const WINDOW = 86400;
+
+    // Maximum questions allowed per 24 hour window (backend-configurable)
+    private int $limit;
 
     private string $secret;
 
     private ConnectionPool $connectionPool;
     private LoggerInterface $logger;
+    private ExtensionConfiguration $extensionConfiguration;
 
-    public function __construct(ConnectionPool $connectionPool, LoggerInterface $logger)
+    public function __construct(ConnectionPool $connectionPool, LoggerInterface $logger,ExtensionConfiguration $extensionConfiguration)
     {
         $this->connectionPool = $connectionPool;
         $this->logger = $logger;
+        $this->extensionConfiguration = $extensionConfiguration;
 
         $configuredSecret = getenv('RATE_LIMIT_SECRET');
         if (empty($configuredSecret)) {
@@ -32,7 +35,9 @@ class RateLimitService
         } else {
             $this->secret = $configuredSecret;
         }
+        $this->limit = (int) $this->extensionConfiguration->get('chatbot', 'rateLimit');
     }
+
 
     /**
      * Returns true if the request is allowed, false if limit exceeded
@@ -52,7 +57,7 @@ class RateLimitService
 
         if ($existing) {
             $windowExpired = ($now - $existing['started_at']) >= self::WINDOW;
-            if (!$windowExpired && $existing['question_count'] >= self::LIMIT) {
+            if (!$windowExpired && $existing['question_count'] >= $this->limit) {
                 return false;
             }
         }
@@ -76,7 +81,7 @@ class RateLimitService
             ['ip_hash' => $ipHash]
         )->fetchAssociative();
 
-        return ($record['question_count'] ?? 0) <= self::LIMIT;
+        return ($record['question_count'] ?? 0) <= $this->limit;
     }
 
     public function hashIp(string $ip): string
