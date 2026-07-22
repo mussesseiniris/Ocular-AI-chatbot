@@ -23,6 +23,13 @@ services:
           description: 'Deletes rate limit records older than 24 hours'
           schedulable: true
 
+  Ocular\Chatbot\Command\CleanupInteractionLogCommand:
+    tags:
+        - name: 'console.command'
+          command: 'chatbot:cleanup-interactionlog'
+          description: 'Deletes interaction log records older than the retention window'
+          schedulable: true
+
   Ocular\Chatbot\Command\IngestCommand:
     tags:
         - name: 'console.command'

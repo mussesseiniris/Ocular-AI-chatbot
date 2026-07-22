@@ -18,12 +18,14 @@ final class ChatResult
     private function __construct(
         public readonly bool $ok,
         public readonly string $message,
+        public readonly int $chunksFound = 0,
+        public readonly string $topTopic = '',
     ) {
     }
 
-    public static function success(string $answer): self
+    public static function success(string $answer, int $chunksFound = 0, string $topTopic = ''): self
     {
-        return new self(true, $answer);
+        return new self(true, $answer, $chunksFound, $topTopic);
     }
 
     public static function failure(string $message): self

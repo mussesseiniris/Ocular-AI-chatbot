@@ -9,3 +9,9 @@ projectPid = 12
 
 # cat=basic/enable; type=string; label=Articles page storage PID
 articlePid = 19
+
+# cat=basic/enable; type=string; label=Interaction log retention (days)
+interactionLogRetentionDays = 90
+
+# cat=basic/enable; type=string; label=Rate limit retention (hours)
+rateLimitRetentionHours = 24
