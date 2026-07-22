@@ -11,6 +11,9 @@ services:
   Ocular\Chatbot\Hooks\ChunkSyncHook:
     public: true
 
+  Ocular\Chatbot\DataProcessing\ChatbotEnabledProcessor:
+    public: true
+
   Psr\Http\Client\ClientInterface:
     class: GuzzleHttp\Client
 
