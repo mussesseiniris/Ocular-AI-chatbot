@@ -10,7 +10,7 @@ TYPO3 v13 extension that adds a RAG (Retrieval-Augmented Generation) AI chatbot 
    - Saving or deleting a content element on the About Us or Services page rebuilds that whole section (several small content elements combine into shared chunks, so a full section rebuild is simpler and safer than replacing individual rows).
    - Services is the fragile one: `ServiceProvider` matches content elements by a hardcoded list of exact service header names and by container position (gradient-container & sibling text element), not by a stable ID. Renaming a service header, restructuring its container, or adding a service outside that list can produce a missing or stale chunk. Treat Services as the section worth spot-checking after backend changes — re-run `chatbot:ingest --reset` if in doubt.
 3. **Ask** — a visitor submits a question through the frontend widget. The backend:
-   - Verifies the request with Cloudflare Turnstil*.
+   - Verifies the request with Cloudflare Turnstile.
    - Checks a per-IP daily rate limit.
    - Embeds the question and searches Qdrant for the most relevant chunks.
    - Builds a prompt (system prompt + retrieved chunks + recent conversation history) and sends it to an OpenAI-compatible LLM via LLPhant.
@@ -47,17 +47,17 @@ Classes/
 
 ## Requirements
 
-- TYPO3 `^13.0`
+- TYPO3 ^13.0
 - PHP with Composer
 - A running [Qdrant](https://qdrant.tech/) instance
 - A Voyage AI API key (embeddings)
 - An OpenAI-compatible LLM endpoint (e.g. Groq) and API key
 
-Composer dependencies: `theodo-group/llphant`, `hkulekci/qdrant`, `smalot/pdfparser`.
+Composer dependencies: theodo-group/llphant, hkulekci/qdrant, smalot/pdfparser.
 
 ## Configuration
 
-Set the following environment variables (e.g. in `.env`):
+Set the following environment variables (e.g. in .env):
 
 | Variable | Purpose |
 |---|---|
@@ -67,10 +67,10 @@ Set the following environment variables (e.g. in `.env`):
 | `LLM_MODEL` | Model name to use for chat completions |
 | `QDRANT_HOST` | Qdrant host |
 | `QDRANT_PORT` | Qdrant port |
-| `QDRANT_COLLECTION` | Qdrant collection name (chunks are stored under the `openai` named vector) |
+| `QDRANT_COLLECTION` | Qdrant collection name (chunks are stored under the openai named vector) |
 | `RATE_LIMIT_SECRET` | Secret used to hash IPs before storing them for rate limiting. Secret also used to hash IPs for storing conversation in logging table|
 | `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret key; requests are blocked if unset |
-| `SITE_BASE_URL` | Public base URL of the site (e.g. `https://ocular.nz`), prepended to source links in answers |
+| `SITE_BASE_URL` | Public base URL of the site (e.g. https://ocular.nz), prepended to source links in answers |
 
 The Turnstile site key is configured via TypoScript constant `plugin.tx_chatbot_chatbot.turnstile.siteKey`.
 
@@ -78,51 +78,51 @@ The contact and support email chatbot refers to the user is configured via the T
 
 ## Installation
 
-`ocular-nz/chatbot` is already declared in this project's root `composer.json` (as `dev-main`, pulled from the `mussesseiniris/Ocular-AI-chatbot` VCS repository listed under `repositories`). That means within this repo you don't need to add or require anything:
+`ocular-nz/chatbot` is already declared in this project's root `composer.json` (as dev-main, pulled from the `mussesseiniris/Ocular-AI-chatbot` VCS repository listed under repositories). That means within this repo you don't need to add or require anything:
 
-1. Run `composer update ocular-nz/chatbot` to pull the latest commit from `dev-main` (or `composer install` on a fresh checkout). Confirm it shows as active under Admin Tools > Extensions if in doubt. It also runs the database schema update so the `tx_chatbot_rate_limit` and `tx_chatbot_interaction_log` tables are created automatically at this step — no manual Database Compare needed. Only fall back to running it manually (Admin Tools > Maintenance > Analyze Database Structure, or `vendor/bin/typo3 database:updateschema`) if a deploy pipeline installs with `--no-scripts` and skips the hook.
+1. Run `composer update ocular-nz/chatbot` to pull the latest commit from dev-main (or `composer install` on a fresh checkout). Confirm it shows as active under Admin Tools > Extensions if in doubt. It also runs the database schema update so the `tx_chatbot_rate_limit` and `tx_chatbot_interaction_log` tables are created automatically at this step - no manual Database Compare needed. Only fall back to running it manually (Admin Tools > Maintenance > Analyze Database Structure, or `vendor/bin/typo3 database:updateschema`) if a deploy pipeline installs with `--no-scripts` and skips the hook.
 2. Set the environment variables listed above.
 3. Check the storage page IDs in the extension configuration (see below).
-4. Run ingest command `chatbot:ingest` to ingest content into qdrant 
+4. Run ingest command `vendor/bin/typo3 chatbot:ingest` to ingest content into qdrant 
 
-To use this extension in a different project instead, add the git repository under `repositories` in that project's `composer.json` and run `composer require ocular-nz/chatbot:dev-main` first.
+To use this extension in a different project instead, add the git repository under repositories in that project's `composer.json` and run `composer require ocular-nz/chatbot:dev-main` first.
 
 ### Storage Page IDs configuration
 
-The storage page IDs the content providers read from are set in **Admin Tools > Settings > Extension Configuration > chatbot**:
+The storage page IDs the content providers read from are set in Admin Tools > Settings > Extension Configuration > chatbot:
 
 | Setting | Purpose | Default |
 |---|---|---|
 | `aboutUsPid` | Page ID of the About Us page | 2 |
-| `servicePid` | Page ID of the Services page | 6 |
+| `servicePid` | Page ID of the Services page | 6 |W
 | `projectPid` | Storage folder ID of project news records | 12 |
 | `articlePid` | Storage folder ID of article news records | 19 |
 
-On a fresh install, verify these match the actual page tree — a wrong PID makes the corresponding source silently produce zero chunks.
+On a fresh install, verify these match the actual page tree. A wrong PID makes the corresponding source silently produce zero chunks.
 
 ## Usage
 
 ### Ingest content into Qdrant
 
 ```
-chatbot:ingest
+vendor/bin/typo3 chatbot:ingest
 ```
-Note - Connects to the already-running Qdrant container (started via docker-compose.yaml). By default, creates the collection only if it doesn't exist yet, then adds/updates chunks (existing chunks aren't removed — stale ones can linger). Use --reset to wipe the collection and rebuild it from scratch.
+Note - Connects to the already-running Qdrant container (started via docker-compose.yaml). By default, creates the collection only if it doesn't exist yet, then adds/updates chunks (existing chunks aren't removed, stale ones can linger). Use --reset to wipe the collection and rebuild it from scratch.
 
 ### Rate-limit records
 
 ```
-chatbot:cleanup-ratelimit
+vendor/bin/typo3 chatbot:cleanup-ratelimit
 ```
 
-Deletes rate-limit rows older than 24 hours; intended to run on a schedule (already tagged `schedulable`).
+Deletes rate-limit rows older than 24 hours; intended to run on a schedule (already tagged schedulable).
 
 ## Interaction log records
 
 ```
-chatbot:cleanup-interactionlog
+vendor/bin/typo3 chatbot:cleanup-interactionlog
 ```
-Deletes interaction log records older than the retention window (e.g. 90 days); intended to run on a schedule (already tagged `schedulable`).
+Deletes interaction log records older than the retention window (e.g. 90 days); intended to run on a schedule (already tagged schedulable).
 
 ## Frontend endpoints
 
