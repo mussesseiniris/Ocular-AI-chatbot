@@ -16,5 +16,8 @@ interactionLogRetentionDays = 90
 # cat=basic/enable; type=string; label=Rate limit retention (hours)
 rateLimitRetentionHours = 24
 
+# cat=basic/enable; type=string; label=Rate limit(number of requests)
+rateLimit = 20
+
 # cat=basic/enable; type=boolean; label=Enable chatbot widget
 chatbotEnabled = 1
