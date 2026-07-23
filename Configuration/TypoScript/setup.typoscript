@@ -68,3 +68,8 @@ page.footerData.10 {
     }
 }
 
+page {
+    includeCSS {
+        chatbot = EXT:chatbot/Resources/Public/Css/ChatbotStyle.css
+    }
+}
